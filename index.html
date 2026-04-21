@@ -1,1094 +1,800 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>StoryTV · Creator CPX Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryTV — Creator CPX Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root {
-  --bg: #0f0f1a;
-  --surface: #1a1a2e;
-  --surface2: #16213e;
-  --border: #2a2a4a;
-  --accent-org: #00c896;
-  --accent-pa: #4f8ef7;
-  --accent-blend: #b56cfb;
-  --accent-warn: #f5a623;
-  --accent-red: #f25f5c;
-  --text: #e8eaf6;
-  --text-muted: #7b7fa8;
-  --text-dim: #4a4d6e;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; min-height: 100vh; }
+  :root {
+    --bg:#0b0f1a; --bg2:#111827; --bg3:#1a2235; --bg4:#1e2a3a;
+    --border:#1e2d40; --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+    --green:#22c55e; --green-dim:#1a3a26; --blue:#5ba3f5; --blue-dim:#1a2a3a;
+    --purple:#a78bfa; --purple-dim:#2a1a3a; --amber:#fbbf24; --red:#f87171; --teal:#2dd4bf;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
 
-/* ── HEADER ── */
-header {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.logo { display: flex; align-items: center; gap: 10px; }
-.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,#4f8ef7,#b56cfb); border-radius: 8px; display:flex;align-items:center;justify-content:center; font-size:16px; }
-.logo h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; }
-.logo span { font-size: 10px; color: var(--text-muted); display:block; margin-top:1px; }
-.header-right { display:flex; align-items:center; gap:12px; }
-.live-badge { display:flex;align-items:center;gap:5px; font-size:11px; color:var(--accent-org); font-weight:600; }
-.live-dot { width:6px;height:6px;border-radius:50%;background:var(--accent-org); animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-#last-updated { font-size:11px; color:var(--text-muted); }
+  /* TOP BAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .topbar-left{display:flex;align-items:center;gap:10px;}
+  .logo{width:28px;height:28px;background:linear-gradient(135deg,#5ba3f5,#a78bfa);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;}
+  .brand{font-size:14px;font-weight:600;}
+  .brand-sub{font-size:11px;color:var(--text3);}
+  .live-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green);background:var(--green-dim);padding:3px 10px;border-radius:20px;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  #refresh-status{font-size:11px;color:var(--text3);cursor:pointer;}
+  #refresh-status:hover{color:var(--text2);}
 
-/* ── LOADING ── */
-#loading {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  height: 60vh; gap:16px;
-}
-.spinner { width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent-pa);border-radius:50%;animation:spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#loading p { color:var(--text-muted); font-size:13px; }
-#error-box { display:none; text-align:center; padding:60px 20px; }
-#error-box h2 { color:var(--accent-red); margin-bottom:8px; }
-#error-box p { color:var(--text-muted); font-size:12px; margin-bottom:16px; }
-#error-box button { padding:8px 20px; background:var(--accent-pa); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; }
+  /* LOADING OVERLAY */
+  #loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:13px;color:var(--text3);}
+  #error-banner{display:none;background:#2a1010;border:1px solid var(--red);color:var(--red);padding:10px 20px;font-size:12px;text-align:center;}
 
-/* ── NAV ── */
-#app { display:none; }
-nav {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex; gap:0; overflow-x:auto; padding: 0 16px;
-}
-nav button {
-  padding: 12px 16px; border:none; background:none; cursor:pointer;
-  font-size:12px; font-weight:600; color:var(--text-muted);
-  border-bottom: 2px solid transparent; white-space:nowrap;
-  transition: all 0.15s; display:flex;align-items:center;gap:6px;
-}
-nav button:hover { color:var(--text); background: rgba(255,255,255,0.03); }
-nav button.active { color:var(--accent-pa); border-bottom-color:var(--accent-pa); }
+  /* NAV */
+  .nav{display:flex;gap:2px;padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);}
+  .nav-tab{padding:10px 16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+  .nav-tab:hover{color:var(--text2);}
+  .nav-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
 
-/* ── SECTIONS ── */
-.section { padding: 20px 24px; display:none; animation: fadeIn 0.2s ease; }
-.section.active { display:block; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+  /* PAGES */
+  .page{display:none;padding:20px;}
+  .page.active{display:block;}
+  .page-title{font-size:16px;font-weight:600;margin-bottom:4px;}
+  .page-sub{font-size:11px;color:var(--text3);margin-bottom:16px;}
 
-/* ── SECTION HEADER ── */
-.sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-.sec-title { font-size:14px; font-weight:700; color:var(--text); }
-.sec-subtitle { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  /* METRIC CARDS */
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+  .metric-card{background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border);}
+  .metric-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:4px;margin-bottom:10px;}
+  .badge-green{background:var(--green-dim);color:var(--green);}
+  .badge-blue{background:var(--blue-dim);color:var(--blue);}
+  .badge-purple{background:var(--purple-dim);color:var(--purple);}
+  .mrow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+  .mrow:last-child{border-bottom:none;}
+  .mk{color:var(--text3);}
+  .mv{font-weight:500;}
+  .v-purple{color:var(--purple)!important;}
+  .v-green{color:var(--green)!important;}
 
-/* ── SOURCE PILLS ── */
-.source-pills { display:flex; gap:6px; }
-.source-pills button {
-  padding:5px 14px; border-radius:20px; border:1.5px solid var(--border);
-  background:transparent; cursor:pointer; font-size:11px; font-weight:700;
-  color:var(--text-muted); transition:all 0.15s; letter-spacing:0.3px;
-}
-.source-pills button.pill-org { border-color:var(--accent-org); color:var(--accent-org); background:rgba(0,200,150,0.08); }
-.source-pills button.pill-pa { border-color:var(--accent-pa); color:var(--accent-pa); background:rgba(79,142,247,0.08); }
-.source-pills button.pill-blend { border-color:var(--accent-blend); color:var(--accent-blend); background:rgba(181,108,251,0.08); }
-.source-pills button:not(.pill-org):not(.pill-pa):not(.pill-blend) { opacity:0.4; }
+  /* CHART BOXES */
+  .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .chart-box{background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border);}
+  .chart-title{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
+  .chart-sub{font-size:10px;color:var(--text3);margin-bottom:10px;}
+  .chart-wrap{position:relative;height:180px;}
 
-/* ── 3-COL COMPARE ── */
-.compare-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
-.ccard {
-  background: var(--surface); border-radius:12px;
-  border: 1px solid var(--border); overflow:hidden;
-}
-.ccard-head {
-  padding:10px 14px; display:flex; align-items:center; gap:8px;
-  border-bottom:1px solid var(--border);
-}
-.ccard-head .dot { width:8px;height:8px;border-radius:50%; flex-shrink:0; }
-.ccard-head .dot.org { background:var(--accent-org); box-shadow:0 0 6px var(--accent-org); }
-.ccard-head .dot.pa { background:var(--accent-pa); box-shadow:0 0 6px var(--accent-pa); }
-.ccard-head .dot.blend { background:var(--accent-blend); box-shadow:0 0 6px var(--accent-blend); }
-.ccard-head h3 { font-size:11px; font-weight:700; letter-spacing:0.5px; }
-.ccard-head h3.org { color:var(--accent-org); }
-.ccard-head h3.pa { color:var(--accent-pa); }
-.ccard-head h3.blend { color:var(--accent-blend); }
-.ccard-row { padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center; }
-.ccard-row:last-child { border-bottom:none; }
-.ccard-row .lbl { font-size:10px; color:var(--text-muted); font-weight:500; }
-.ccard-row .val { font-size:12px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
-.ccard-row.highlight .val { font-size:14px; }
-.ccard-row.highlight.org .val { color:var(--accent-org); }
-.ccard-row.highlight.pa .val { color:var(--accent-pa); }
-.ccard-row.highlight.blend .val { color:var(--accent-blend); }
+  /* HORIZONTAL BAR */
+  .hbar-chart{display:flex;flex-direction:column;gap:6px;}
+  .hbar-item{display:flex;align-items:center;gap:8px;}
+  .hbar-label{width:130px;font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;}
+  .hbar-track{flex:1;height:16px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;display:flex;}
+  .hbar-org{height:100%;background:#1d9e75;}
+  .hbar-pa{height:100%;background:#378add;}
+  .hbar-val{width:30px;text-align:right;font-size:11px;font-weight:600;flex-shrink:0;}
+  .hbar-legend{display:flex;gap:14px;margin-top:8px;}
+  .leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);}
+  .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
 
-/* ── STAT CARDS ── */
-.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
-.stat-card {
-  background:var(--surface); border-radius:10px; padding:14px 16px;
-  border:1px solid var(--border); position:relative; overflow:hidden;
-}
-.stat-card::after {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:var(--accent-col,var(--accent-pa));
-}
-.stat-card .s-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; }
-.stat-card .s-val { font-size:20px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
-.stat-card .s-sub { font-size:10px; color:var(--text-muted); margin-top:5px; }
-.stat-card .s-trend { font-size:10px; font-weight:700; margin-top:4px; }
-.trend-up { color:var(--accent-org); }
-.trend-down { color:var(--accent-red); }
+  /* FUNNEL TOGGLE */
+  .funnel-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);width:fit-content;margin-bottom:16px;}
+  .ftab{padding:9px 22px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text3);background:var(--bg3);transition:all .15s;}
+  .ftab.active{background:var(--blue);color:#fff;}
+  .ftab:hover:not(.active){color:var(--text);background:var(--bg4);}
 
-/* ── CHART PANELS ── */
-.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-.chart-panel {
-  background:var(--surface); border-radius:12px; border:1px solid var(--border);
-  padding:16px; position:relative;
-}
-.chart-panel.full { grid-column:1/-1; }
-.chart-panel h3 { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
-.chart-panel .chart-sub { font-size:10px; color:var(--text-dim); margin-top:-8px; margin-bottom:10px; }
-canvas { max-width:100%; }
+  /* FUNNEL STEPS */
+  .funnel-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .funnel-step{background:var(--bg3);border-radius:8px;padding:14px;text-align:center;border:1px solid var(--border);border-top:2px solid var(--blue);position:relative;}
+  .step-icon{font-size:18px;margin-bottom:6px;}
+  .step-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .step-num{font-size:22px;font-weight:700;margin-bottom:4px;}
+  .step-conv{font-size:11px;color:var(--green);}
+  .step-cost{font-size:11px;color:var(--text3);}
+  .step-arrow{position:absolute;right:-13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;z-index:2;}
 
-/* ── FUNNEL VISUAL ── */
-.funnel-visual { display:flex; gap:0; margin-bottom:20px; align-items:stretch; }
-.funnel-stage {
-  flex:1; background:var(--surface); border:1px solid var(--border);
-  padding:14px 12px; position:relative; text-align:center;
-  cursor:default;
-}
-.funnel-stage:not(:last-child)::after {
-  content:'▶'; position:absolute; right:-10px; top:50%; transform:translateY(-50%);
-  color:var(--text-dim); font-size:12px; z-index:1;
-}
-.funnel-stage:first-child { border-radius:10px 0 0 10px; }
-.funnel-stage:last-child { border-radius:0 10px 10px 0; }
-.funnel-stage .f-icon { font-size:18px; margin-bottom:4px; }
-.funnel-stage .f-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
-.funnel-stage .f-vol { font-size:16px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; }
-.funnel-stage .f-conv { font-size:10px; margin-top:4px; font-weight:600; }
-.funnel-stage .f-cpx { font-size:10px; color:var(--text-muted); margin-top:3px; }
-.funnel-stage.active-stage { border-color:var(--stage-color,var(--accent-pa)); background:rgba(79,142,247,0.06); }
-.funnel-stage .f-fill {
-  position:absolute; bottom:0; left:0; right:0; height:3px;
-  background:var(--stage-color,var(--accent-pa));
-  opacity:0.7;
-}
-
-/* ── LEADERBOARD ── */
-.lb-controls { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
-.lb-controls .sort-btn {
-  padding:5px 12px; border-radius:6px; border:1px solid var(--border);
-  background:transparent; cursor:pointer; font-size:11px; font-weight:600;
-  color:var(--text-muted); transition:all 0.15s;
-}
-.lb-controls .sort-btn.active { background:var(--accent-pa); color:#fff; border-color:var(--accent-pa); }
-.lb-controls .filter-input {
-  padding:5px 12px; border-radius:6px; border:1px solid var(--border);
-  background:var(--surface2); color:var(--text); font-size:11px;
-  outline:none; width:160px;
-}
-.lb-controls .filter-input::placeholder { color:var(--text-dim); }
-.table-scroll { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; min-width:900px; }
-thead th {
-  background:var(--surface2); padding:8px 10px; text-align:right;
-  font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;
-  letter-spacing:0.4px; white-space:nowrap; border-bottom:1px solid var(--border);
-  position:sticky; top:0;
-}
-thead th:first-child { text-align:left; }
-tbody td {
-  padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.03);
-  text-align:right; color:var(--text); font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-tbody td:first-child { text-align:left; }
-tbody tr:hover td { background:rgba(255,255,255,0.025); }
-.creator-cell { display:flex; flex-direction:column; }
-.creator-name { font-weight:700; font-size:12px; color:var(--text); }
-.creator-handle { font-size:10px; color:var(--text-muted); }
-.type-badge {
-  display:inline-block; padding:2px 7px; border-radius:8px; font-size:9px; font-weight:700;
-  text-transform:uppercase; letter-spacing:0.4px;
-}
-.type-badge.macro { background:rgba(242,95,92,0.15); color:#f25f5c; border:1px solid rgba(242,95,92,0.3); }
-.type-badge.micro { background:rgba(79,142,247,0.15); color:#4f8ef7; border:1px solid rgba(79,142,247,0.3); }
-.type-badge.nano { background:rgba(0,200,150,0.15); color:#00c896; border:1px solid rgba(0,200,150,0.3); }
-.type-badge.ultra_nano { background:rgba(181,108,251,0.15); color:#b56cfb; border:1px solid rgba(181,108,251,0.3); }
-.zero { color:var(--text-dim); }
-
-/* ── ROI SCORE ── */
-.roi-score {
-  display:inline-flex; align-items:center; justify-content:center;
-  width:36px; height:36px; border-radius:50%; font-size:11px; font-weight:800;
-  border:2px solid; flex-shrink:0;
-}
-.roi-s { background:rgba(0,200,150,0.1); border-color:var(--accent-org); color:var(--accent-org); }
-.roi-a { background:rgba(79,142,247,0.1); border-color:var(--accent-pa); color:var(--accent-pa); }
-.roi-b { background:rgba(245,166,35,0.1); border-color:var(--accent-warn); color:var(--accent-warn); }
-.roi-c { background:rgba(242,95,92,0.1); border-color:var(--accent-red); color:var(--accent-red); }
-.roi-na { background:rgba(100,100,130,0.1); border-color:var(--text-dim); color:var(--text-dim); }
-
-/* mini funnel bar */
-.mini-funnel { display:flex; gap:2px; align-items:flex-end; height:20px; margin-top:2px; }
-.mf-bar { width:8px; border-radius:2px 2px 0 0; min-height:2px; }
-
-/* ── DIAGNOSIS ── */
-.flags-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-bottom:20px; }
-.flag-card {
-  background:var(--surface); border-radius:10px; border:1px solid var(--border);
-  padding:12px 14px; display:flex; gap:10px; align-items:flex-start;
-}
-.flag-icon { font-size:20px; flex-shrink:0; }
-.flag-card h4 { font-size:11px; font-weight:700; color:var(--text); margin-bottom:3px; }
-.flag-card p { font-size:10px; color:var(--text-muted); line-height:1.4; }
-.flag-card.good { border-color:rgba(0,200,150,0.3); background:rgba(0,200,150,0.04); }
-.flag-card.warn { border-color:rgba(245,166,35,0.3); background:rgba(245,166,35,0.04); }
-.flag-card.bad { border-color:rgba(242,95,92,0.3); background:rgba(242,95,92,0.04); }
-.flag-card.info { border-color:rgba(79,142,247,0.3); background:rgba(79,142,247,0.04); }
-
-/* ── SEGMENTATION ── */
-.bucket-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
-.bucket-card {
-  background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:16px;
-}
-.bucket-card .b-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-.bucket-card .b-emoji { font-size:20px; }
-.bucket-card h4 { font-size:12px; font-weight:700; color:var(--text); }
-.bucket-card .b-sub { font-size:10px; color:var(--text-muted); }
-.bucket-card .b-count { font-size:28px; font-weight:800; margin-bottom:4px; }
-.bucket-card .creator-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
-.creator-chip { padding:2px 8px; border-radius:10px; background:var(--surface2); font-size:10px; color:var(--text-muted); border:1px solid var(--border); }
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width:5px; height:5px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-
-/* ── RESPONSIVE ── */
-@media(max-width:800px) {
-  .compare-3, .chart-row { grid-template-columns:1fr; }
-  .stat-row { grid-template-columns:1fr 1fr; }
-  .bucket-grid { grid-template-columns:1fr; }
-  .funnel-visual { flex-direction:column; }
-  .funnel-stage:not(:last-child)::after { content:'▼'; right:auto; left:50%; top:auto; bottom:-12px; transform:translateX(-50%); }
-  .funnel-stage:first-child { border-radius:10px 10px 0 0; }
-  .funnel-stage:last-child { border-radius:0 0 10px 10px; }
-  header { flex-direction:column; gap:8px; align-items:flex-start; }
-  .section { padding:16px; }
-}
+  /* LEADERBOARD */
+  .sort-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+  .sort-bar-label{font-size:11px;color:var(--text3);}
+  .sort-btn{padding:5px 12px;font-size:11px;border-radius:5px;border:1px solid var(--border);color:var(--text3);background:var(--bg3);cursor:pointer;transition:all .15s;}
+  .sort-btn:hover{color:var(--text);}
+  .sort-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .roi-legend{display:flex;gap:12px;margin-bottom:10px;background:var(--bg3);padding:8px 12px;border-radius:6px;border:1px solid var(--border);flex-wrap:wrap;align-items:center;}
+  .roi-legend-title{font-size:11px;color:var(--text3);margin-right:4px;}
+  .roi-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+  .col-toggle{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+  .col-btn{padding:3px 8px;font-size:10px;border-radius:4px;border:1px solid var(--border);color:var(--text3);background:transparent;cursor:pointer;transition:all .15s;}
+  .col-btn.on{background:var(--bg4);color:var(--text);border-color:var(--blue);}
+  .lb-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  thead th{padding:9px 10px;text-align:left;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;position:sticky;top:0;}
+  thead th.sortable{cursor:pointer;}
+  thead th.sortable:hover{color:var(--blue);}
+  thead th.sort-on{color:var(--blue);}
+  .sar{margin-left:3px;font-size:9px;}
+  tbody tr:hover td{background:rgba(91,163,245,.04);}
+  tbody td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;white-space:nowrap;}
+  .cname{font-weight:600;color:var(--text);}
+  .cid{font-size:9px;color:var(--text3);}
+  .type-b{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.04em;}
+  .t-micro{background:#1a3a26;color:#4ade80;}
+  .t-macro{background:#1a2a3a;color:#60a5fa;}
+  .t-mega{background:#2a1a3a;color:#c084fc;}
+  .t-nano{background:#2a2010;color:#fbbf24;}
+  .roi-b{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+  .rs{background:#1a3a26;color:#4ade80;}
+  .ra{background:#1a2a1a;color:#86efac;}
+  .rb{background:#2a2a10;color:#fbbf24;}
+  .rc{background:#2a1a10;color:#fb923c;}
+  .rd{background:#2a1010;color:#f87171;}
+  .cell-good{color:var(--green)!important;}
+  .cell-bad{color:var(--red)!important;}
+  .sparkbar{display:flex;align-items:flex-end;gap:1px;height:16px;}
+  .sparkbar span{width:3px;background:var(--blue);border-radius:1px;opacity:.8;}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-icon">📺</div>
-    <div>
-      <h1>StoryTV · Creator CPX Dashboard</h1>
-      <span>Meta Partnership Ads · Organic · Blended ROI</span>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-    <span id="last-updated">Fetching…</span>
-  </div>
-</header>
-
-<div id="loading">
+<!-- LOADING -->
+<div id="loading-overlay">
   <div class="spinner"></div>
-  <p>Fetching live data from StoryTV Exec Tracker…</p>
+  <div class="loading-text" id="loading-text">Fetching live data from Google Sheet…</div>
+</div>
+<div id="error-banner"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">S</div>
+    <div>
+      <div class="brand">StoryTV — Creator CPX Dashboard</div>
+      <div class="brand-sub">Meta Partnership Ads · Organic · Blended ROI</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="live-pill"><div class="live-dot"></div><span id="creator-count">—</span> creators</div>
+    <div id="refresh-status" title="Click to refresh">⟳ refreshed just now</div>
+  </div>
 </div>
 
-<div id="error-box">
-  <h2>⚠️ Could not load data</h2>
-  <p id="error-detail">Make sure the Google Sheet is shared publicly (Anyone with link → Viewer).</p>
-  <button onclick="location.reload()">Retry</button>
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-tab active" onclick="showPage('exec',this)">📊 Executive Summary</div>
+  <div class="nav-tab" onclick="showPage('funnel',this)">🔽 Funnel Analysis</div>
+  <div class="nav-tab" onclick="showPage('leaderboard',this)">🏆 Creator Leaderboard</div>
 </div>
 
-<div id="app">
-  <nav>
-    <button class="active" data-sec="exec" onclick="showSec('exec',this)">📊 Executive Summary</button>
-    <button data-sec="funnel" onclick="showSec('funnel',this)">🔽 Funnel Analysis</button>
-    <button data-sec="leaderboard" onclick="showSec('leaderboard',this)">🏆 Creator Leaderboard</button>
-    <button data-sec="diagnosis" onclick="showSec('diagnosis',this)">🩺 Diagnosis</button>
-    <button data-sec="segmentation" onclick="showSec('segmentation',this)">🎯 Segmentation</button>
-  </nav>
-
-  <!-- ═══ EXECUTIVE SUMMARY ═══ -->
-  <div id="sec-exec" class="section active">
-    <div class="sec-header">
-      <div><div class="sec-title">Executive Summary</div><div class="sec-subtitle">All numbers from live Google Sheet · CPX = Cost per event</div></div>
-    </div>
-
-    <!-- 3-col compare -->
-    <div class="compare-3">
-      <div class="ccard">
-        <div class="ccard-head"><div class="dot org"></div><h3 class="org">🌱 ORGANIC</h3></div>
-        <div class="ccard-row"><span class="lbl">Views / Impressions</span><span class="val" id="o-views">—</span></div>
-        <div class="ccard-row"><span class="lbl">Clicks</span><span class="val" id="o-clicks">—</span></div>
-        <div class="ccard-row"><span class="lbl">Installs</span><span class="val" id="o-installs">—</span></div>
-        <div class="ccard-row"><span class="lbl">Trials</span><span class="val" id="o-trials">—</span></div>
-        <div class="ccard-row"><span class="lbl">Content Spend</span><span class="val" id="o-spend">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP Click</span><span class="val" id="o-cpc">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="o-cpi">—</span></div>
-        <div class="ccard-row highlight org"><span class="lbl">CP Trial</span><span class="val" id="o-cpt">—</span></div>
-      </div>
-      <div class="ccard">
-        <div class="ccard-head"><div class="dot pa"></div><h3 class="pa">📣 META PA</h3></div>
-        <div class="ccard-row"><span class="lbl">Impressions</span><span class="val" id="p-impr">—</span></div>
-        <div class="ccard-row"><span class="lbl">Link Clicks</span><span class="val" id="p-clicks">—</span></div>
-        <div class="ccard-row"><span class="lbl">Installs</span><span class="val" id="p-installs">—</span></div>
-        <div class="ccard-row"><span class="lbl">Trials (Purchases)</span><span class="val" id="p-trials">—</span></div>
-        <div class="ccard-row"><span class="lbl">Ad Spend</span><span class="val" id="p-spend">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP 1000 Impressions</span><span class="val" id="p-cpm">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="p-cpi">—</span></div>
-        <div class="ccard-row highlight pa"><span class="lbl">CP Trial</span><span class="val" id="p-cpt">—</span></div>
-      </div>
-      <div class="ccard">
-        <div class="ccard-head"><div class="dot blend"></div><h3 class="blend">🔀 BLENDED</h3></div>
-        <div class="ccard-row"><span class="lbl">Total Views + Impressions</span><span class="val" id="b-views">—</span></div>
-        <div class="ccard-row"><span class="lbl">Total Clicks</span><span class="val" id="b-clicks">—</span></div>
-        <div class="ccard-row"><span class="lbl">Total Installs</span><span class="val" id="b-installs">—</span></div>
-        <div class="ccard-row"><span class="lbl">Total Trials</span><span class="val" id="b-trials">—</span></div>
-        <div class="ccard-row"><span class="lbl">Total Spend</span><span class="val" id="b-spend">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP Click</span><span class="val" id="b-cpc">—</span></div>
-        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="b-cpi">—</span></div>
-        <div class="ccard-row highlight blend"><span class="lbl">CP Trial</span><span class="val" id="b-cpt">—</span></div>
-      </div>
-    </div>
-
-    <div class="chart-row">
-      <div class="chart-panel">
-        <h3>Trial Share — Organic vs Meta PA</h3>
-        <p class="chart-sub">Contribution to total trials</p>
-        <div style="height:200px"><canvas id="trialDonut"></canvas></div>
-      </div>
-      <div class="chart-panel">
-        <h3>Spend Efficiency — CPTrial Comparison</h3>
-        <p class="chart-sub">Lower is better · ₹ per Trial</p>
-        <div style="height:200px"><canvas id="cptCompare"></canvas></div>
-      </div>
-    </div>
-    <div class="chart-panel full">
-      <h3>Top 15 Creators by Total Trials (Organic + PA)</h3>
-      <p class="chart-sub">Stacked: green = organic, blue = Meta PA</p>
-      <div style="height:240px"><canvas id="topCreators"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ═══ FUNNEL ═══ -->
-  <div id="sec-funnel" class="section">
-    <div class="sec-header">
-      <div><div class="sec-title">Funnel Analysis</div><div class="sec-subtitle">Stage-by-stage volume, conversion rates and cost</div></div>
-      <div class="source-pills">
-        <button id="fp-org" class="pill-org" onclick="setFunnelSrc('org')">Organic</button>
-        <button id="fp-pa" onclick="setFunnelSrc('pa')">Meta PA</button>
-        <button id="fp-blend" onclick="setFunnelSrc('blend')">Blended</button>
-      </div>
-    </div>
-    <div class="funnel-visual" id="funnelVis"></div>
-    <div class="chart-row">
-      <div class="chart-panel">
-        <h3>Funnel Volume (log scale)</h3>
-        <div style="height:220px"><canvas id="funnelVol"></canvas></div>
-      </div>
-      <div class="chart-panel">
-        <h3>CPX by Stage (₹ per event)</h3>
-        <div style="height:220px"><canvas id="funnelCpx"></canvas></div>
+<!-- EXEC PAGE -->
+<div id="page-exec" class="page active">
+  <div class="page-title">Executive Summary</div>
+  <div class="page-sub">All numbers live from Google Sheet · CPX = Cost per event · auto-refreshes every 5 min</div>
+  <div class="metric-grid" id="exec-metrics"></div>
+  <div style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-title">Top 15 Creators by Total Trials (Organic + PA)</div>
+      <div class="chart-sub">Stacked: green = organic, blue = Meta PA</div>
+      <div id="top15-hbar" class="hbar-chart"></div>
+      <div class="hbar-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#1d9e75"></div>Organic</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#378add"></div>Meta PA</div>
       </div>
     </div>
   </div>
-
-  <!-- ═══ LEADERBOARD ═══ -->
-  <div id="sec-leaderboard" class="section">
-    <div class="sec-header">
-      <div><div class="sec-title">Creator Leaderboard</div><div class="sec-subtitle">Full funnel health + ROI Score per creator</div></div>
+  <div class="chart-row">
+    <div class="chart-box">
+      <div class="chart-title">Spend Efficiency — CPTrial Comparison</div>
+      <div class="chart-sub">Lower is better · ₹ per Trial · dashed = blended median</div>
+      <div class="chart-wrap"><canvas id="spendChart"></canvas></div>
     </div>
-    <div class="lb-controls">
-      <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">Sort:</span>
-      <button class="sort-btn active" onclick="sortLB('blend_trials',this)">Total Trials ↓</button>
-      <button class="sort-btn" onclick="sortLB('blend_cpt',this)">CP Trial ↑</button>
-      <button class="sort-btn" onclick="sortLB('roi_score',this)">ROI Score ↓</button>
-      <button class="sort-btn" onclick="sortLB('pa_spend',this)">PA Spend ↓</button>
-      <input class="filter-input" id="lb-search" placeholder="🔍  Search creator…" oninput="renderLB()"/>
-    </div>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align:left">Creator</th>
-            <th>Type</th>
-            <th title="ROI Score blending CPTrial efficiency, trial volume and funnel conversion">ROI Score</th>
-            <th title="Organic: content cost / trials">Org CPTrial</th>
-            <th title="Meta PA: ad spend / trials">PA CPTrial</th>
-            <th title="Combined spend / combined trials">Blend CPTrial</th>
-            <th>Org Views</th>
-            <th>Org Clicks</th>
-            <th>Org Installs</th>
-            <th>Org Trials</th>
-            <th>PA Spend (₹)</th>
-            <th>PA Impressions</th>
-            <th>PA Link Clicks</th>
-            <th>PA Installs</th>
-            <th>PA Trials</th>
-            <th>Total Trials</th>
-            <th>Total Spend (₹)</th>
-            <th>Funnel</th>
-          </tr>
-        </thead>
-        <tbody id="lb-body"></tbody>
-      </table>
+    <div class="chart-box">
+      <div class="chart-title">Trial Share — Organic vs Meta PA</div>
+      <div class="chart-sub">Contribution to total trials</div>
+      <div class="chart-wrap"><canvas id="trialShareChart"></canvas></div>
     </div>
   </div>
+</div>
 
-  <!-- ═══ DIAGNOSIS ═══ -->
-  <div id="sec-diagnosis" class="section">
-    <div class="sec-header">
-      <div><div class="sec-title">Diagnosis</div><div class="sec-subtitle">Automated insight flags · CPX cross-plots</div></div>
+<!-- FUNNEL PAGE -->
+<div id="page-funnel" class="page">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div>
+      <div class="page-title">Funnel Analysis</div>
+      <div class="page-sub">Stage-by-stage volume, conversion rates and cost</div>
     </div>
-    <div class="flags-grid" id="flags-grid"></div>
-    <div class="chart-row">
-      <div class="chart-panel">
-        <h3>PA CPClick vs CPTrial (bubble = trial volume)</h3>
-        <p class="chart-sub">Low CPClick + Low CPTrial → top right = efficient</p>
-        <div style="height:260px"><canvas id="scatter1"></canvas></div>
-      </div>
-      <div class="chart-panel">
-        <h3>PA Spend vs CPTrial</h3>
-        <p class="chart-sub">Ideal zone: high spend, low CPTrial</p>
-        <div style="height:260px"><canvas id="scatter2"></canvas></div>
-      </div>
-    </div>
-    <div class="chart-panel full">
-      <h3>Organic Click→Install→Trial Conversion by Creator (top 20)</h3>
-      <div style="height:220px"><canvas id="orgConvChart"></canvas></div>
+    <div class="funnel-toggle" id="funnel-toggle">
+      <div class="ftab active" onclick="switchFunnel('organic',this)">Organic</div>
+      <div class="ftab" onclick="switchFunnel('meta',this)">Meta PA</div>
+      <div class="ftab" onclick="switchFunnel('blended',this)">Blended</div>
     </div>
   </div>
-
-  <!-- ═══ SEGMENTATION ═══ -->
-  <div id="sec-segmentation" class="section">
-    <div class="sec-header">
-      <div><div class="sec-title">Segmentation</div><div class="sec-subtitle">Creator buckets · Type breakdown · Scale decisions</div></div>
+  <div class="funnel-steps" id="funnel-steps"></div>
+  <div class="chart-row">
+    <div class="chart-box">
+      <div class="chart-title">Funnel Volume (log scale)</div>
+      <div class="chart-wrap"><canvas id="fVolChart"></canvas></div>
     </div>
-    <div class="bucket-grid" id="bucket-grid"></div>
-    <div class="chart-row">
-      <div class="chart-panel">
-        <h3>Creator Type — Blended CPTrial (₹)</h3>
-        <div style="height:200px"><canvas id="typeCpt"></canvas></div>
-      </div>
-      <div class="chart-panel">
-        <h3>Creator Type — Total Trials</h3>
-        <div style="height:200px"><canvas id="typeTrials"></canvas></div>
-      </div>
+    <div class="chart-box">
+      <div class="chart-title">CPX by Stage (₹ per event)</div>
+      <div class="chart-wrap"><canvas id="fCPXChart"></canvas></div>
     </div>
   </div>
+</div>
 
-</div><!-- #app -->
+<!-- LEADERBOARD PAGE -->
+<div id="page-leaderboard" class="page">
+  <div class="page-title">Creator Leaderboard</div>
+  <div class="page-sub">Full funnel health + ROI Score per creator · sorted live from sheet data</div>
+  <div class="roi-legend">
+    <span class="roi-legend-title">ROI Score:</span>
+    <div class="roi-leg-item"><div class="roi-b rs" style="width:18px;height:18px;font-size:10px;">S</div>Top 20%</div>
+    <div class="roi-leg-item"><div class="roi-b ra" style="width:18px;height:18px;font-size:10px;">A</div>20–40%</div>
+    <div class="roi-leg-item"><div class="roi-b rb" style="width:18px;height:18px;font-size:10px;">B</div>40–60%</div>
+    <div class="roi-leg-item"><div class="roi-b rc" style="width:18px;height:18px;font-size:10px;">C</div>60–80%</div>
+    <div class="roi-leg-item"><div class="roi-b rd" style="width:18px;height:18px;font-size:10px;">D</div>Bottom 20%</div>
+    <span style="margin-left:8px;font-size:10px;color:var(--text3);">
+      · <span style="color:var(--green)">green CPTrial</span> = below median
+      · <span style="color:var(--red)">red</span> = above 2× median
+    </span>
+  </div>
+  <div class="sort-bar">
+    <span class="sort-bar-label">Sort:</span>
+    <button class="sort-btn active" onclick="setSortLB('totalTrials',false,this)">Total Trials ↓</button>
+    <button class="sort-btn" onclick="setSortLB('blendCPTrial',true,this)">CP Trial ↑</button>
+    <button class="sort-btn" onclick="setSortLB('roiScore',false,this)">ROI Score</button>
+    <button class="sort-btn" onclick="setSortLB('paSpend',false,this)">PA Spend</button>
+  </div>
+  <div class="col-toggle">
+    <span style="font-size:10px;color:var(--text3);margin-right:4px;">Columns:</span>
+    <button class="col-btn on" onclick="toggleCol('organic',this)">Organic</button>
+    <button class="col-btn on" onclick="toggleCol('pa',this)">PA</button>
+    <button class="col-btn on" onclick="toggleCol('blended',this)">Blended</button>
+    <button class="col-btn on" onclick="toggleCol('funnel',this)">Funnel</button>
+  </div>
+  <div class="lb-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Creator</th>
+          <th>Type</th>
+          <th class="sortable" onclick="setSortLBH('roiScore',false,this)">ROI Score<span class="sar">⇅</span></th>
+          <th class="sortable col-organic" onclick="setSortLBH('orgCPTrial',true,this)">Org CPTrial<span class="sar">⇅</span></th>
+          <th class="col-organic">Org Views</th>
+          <th class="col-organic">Org Clicks</th>
+          <th class="col-organic">Org Installs</th>
+          <th class="sortable col-organic" onclick="setSortLBH('orgTrials',false,this)">Org Trials<span class="sar">⇅</span></th>
+          <th class="sortable col-pa" onclick="setSortLBH('paSpend',false,this)">PA Spend<span class="sar">⇅</span></th>
+          <th class="col-pa">PA Impr.</th>
+          <th class="col-pa">PA Clicks</th>
+          <th class="col-pa">PA Installs</th>
+          <th class="sortable col-pa" onclick="setSortLBH('paTrials',false,this)">PA Trials<span class="sar">⇅</span></th>
+          <th class="sortable sort-on col-blended" onclick="setSortLBH('totalTrials',false,this)">Total Trials<span class="sar">↓</span></th>
+          <th class="col-blended">Total Spend</th>
+          <th class="sortable col-blended" onclick="setSortLBH('blendCPTrial',true,this)">Blend CPTrial<span class="sar">⇅</span></th>
+          <th class="col-funnel">Funnel</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+</div>
 
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
-const SHEET_ID  = '2PACX-1vQGQ1U2rmf9M0BODebWeLV-1bxQOETA3i6DE54EqMkr73MyguQaSFO4P1UnIf0-elB6VWwK83fe2c6Q';
-// These GIDs come from the sheet URL — we try the main export first, fallback to CSV
-// The sheet may require "share with anyone" to use CSV export
-const CSV_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
-// For when the sheet is published: https://docs.google.com/spreadsheets/d/ID/pub?output=csv
-const PUB_URL   = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG — update SHEET_ID if the source sheet changes
+// The sheet must be shared as "Anyone with the link can view"
+// ═══════════════════════════════════════════════════════════════════
+const SHEET_ID = '17ad72UZB_x8oTVVjJmE0nr015SjA1OzUmWxU63sU7TQ';
+const SHEET_GID = '0'; // "Org+PA" tab gid — update if tab changes
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+// CORS proxy needed for GitHub Pages (browser blocks direct cross-origin CSV fetch)
+// Using allorigins.win — free, no key, reliable for public sheets
+const PROXY = url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-// ─── GLOBALS ─────────────────────────────────────────────────────────────────
+const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
 let CREATORS = [];
-let TOTALS   = {};
-let CHARTS   = {};
-let fSrc     = 'org';
-let lbSort   = 'blend_trials';
-// Benchmark CPTrial (industry/target)
-const BENCH_CPT = 500;
+let lbSort = { col:'totalTrials', asc:false };
+let colVis = { organic:true, pa:true, blended:true, funnel:true };
+let lastFetch = null;
+let spendChart, trialChart, fVolChart, fCPXChart;
+let funnelMode = 'organic';
 
-// ─── FORMATTERS ──────────────────────────────────────────────────────────────
-const rupee = n => {
-  if (n == null || isNaN(n)) return '—';
-  return '₹' + Math.round(n).toLocaleString('en-IN');
-};
-const num = n => {
-  if (n == null || isNaN(n) || n === 0) return '—';
-  return Math.round(n).toLocaleString('en-IN');
-};
-const pct = n => n > 0 ? (n * 100).toFixed(1) + '%' : '—';
-const cpr = (spend, count) => count > 0 ? rupee(spend / count) : '—';
-const z = v => v === 0 ? '<span class="zero">—</span>' : String(Math.round(v).toLocaleString('en-IN'));
-const zr = (s, c) => c > 0 ? rupee(s / c) : '<span class="zero">—</span>';
-
-// ─── ROI SCORE ───────────────────────────────────────────────────────────────
-function roiScore(r) {
-  // Scores 0–100 blending:
-  //   40% CPTrial efficiency vs benchmark
-  //   30% trial volume (log-normalized across dataset)
-  //   20% funnel conversion (click→trial)
-  //   10% PA amplification leverage
-  const blendSpend  = r.content_cost + r.pa_spend;
-  const blendTrials = r.org_trials + r.pa_trials;
-
-  if (blendTrials === 0) return null; // no conversion data
-
-  // 1. CPTrial score (vs benchmark ₹500): 40pts
-  const cpt = blendSpend / blendTrials;
-  const cptScore = Math.min(40, Math.max(0, 40 * (BENCH_CPT / cpt)));
-
-  // 2. Trial volume score: 30pts — log scale, top creator gets 30
-  const maxT = Math.max(...CREATORS.map(c => c.org_trials + c.pa_trials));
-  const volScore = 30 * (Math.log1p(blendTrials) / Math.log1p(maxT));
-
-  // 3. Funnel conversion: clicks → trials (organic): 20pts
-  const clicks = r.org_clicks + r.pa_link_clicks;
-  const convRate = clicks > 0 ? blendTrials / clicks : 0;
-  const convScore = Math.min(20, convRate * 20 * 100); // 1% click→trial = full 20
-
-  // 4. PA leverage: does PA amplify with good CPTrial? 10pts
-  let paLev = 0;
-  if (r.pa_trials > 0 && r.pa_spend > 0) {
-    const paCPT = r.pa_spend / r.pa_trials;
-    paLev = Math.min(10, 10 * (BENCH_CPT / paCPT));
-  }
-
-  const total = Math.round(cptScore + volScore + convScore + paLev);
-  return Math.min(100, Math.max(0, total));
-}
-
-function roiGrade(score) {
-  if (score == null) return { grade: '—', cls: 'roi-na' };
-  if (score >= 70) return { grade: 'S', cls: 'roi-s' };
-  if (score >= 50) return { grade: 'A', cls: 'roi-a' };
-  if (score >= 30) return { grade: 'B', cls: 'roi-b' };
-  return { grade: 'C', cls: 'roi-c' };
-}
-
-// ─── PARSE SHEET DATA ────────────────────────────────────────────────────────
-function parseCSV(raw) {
-  // Parse raw CSV into rows of arrays
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  const cleaned = [];
-  for (const l of lines) {
-    // simple CSV split (handles quoted commas)
-    const row = [];
-    let cur = '', inQ = false;
-    for (let i = 0; i < l.length; i++) {
-      const ch = l[i];
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
-      else cur += ch;
+// ═══════════════════════════════════════════════════════════════════
+// CSV FETCH + PARSE
+// ═══════════════════════════════════════════════════════════════════
+function parseCSV(text) {
+  const rows = [];
+  let cur = '', inQ = false, row = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i+1];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { row.push(cur.trim()); cur = ''; continue; }
+    if ((c === '\r' || c === '\n') && !inQ) {
+      if (c === '\r' && n === '\n') i++;
+      row.push(cur.trim()); rows.push(row); row = []; cur = ''; continue;
     }
-    row.push(cur.trim());
-    cleaned.push(row);
+    cur += c;
   }
-  return cleaned;
+  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
+  return rows;
 }
 
-function cn(s) {
-  if (!s) return 0;
-  s = String(s).replace(/₹/g,'').replace(/,/g,'').replace(/\\/g,'').trim();
-  if (!s || s === '-' || s.toLowerCase() === 'live' || s.toLowerCase() === 'paused') return 0;
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+function n(v) {
+  if (!v || v === '' || v === '—') return 0;
+  return parseFloat(v.replace(/[₹,\s]/g, '')) || 0;
 }
 
-function findCreatorTable(rows) {
-  // Find the row index where the creator table header starts
-  // Header contains "Influencer ID", "Username", "Organic" columns and "PA" columns
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const joined = r.join('|').toLowerCase();
-    if (joined.includes('influencer id') && joined.includes('username') && (joined.includes('organic') || joined.includes('clicks'))) {
-      return i;
+function processRows(rows) {
+  // Find header row (contains 'Username')
+  let hIdx = rows.findIndex(r => r.some(c => c.toLowerCase().includes('username')));
+  if (hIdx < 0) hIdx = 0;
+  const headers = rows[hIdx].map(h => h.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_'));
+
+  const col = name => {
+    const synonyms = {
+      id: ['influencer_id'],
+      username: ['username'],
+      type: ['influencer_type', 'type'],
+      orgViews: ['organic_views'],
+      orgClicks: ['org_clicks', 'org__clicks'],
+      orgInstalls: ['org_installs', 'org__installs'],
+      orgTrials: ['org_acquisitions', 'org__acquisitions'],
+      contentCost: ['content_cost'],
+      paSpend: ['pa_spend'],
+      paImpr: ['pa_impressions'],
+      paViews: ['pa_video_views'],
+      paClicks: ['pa_link_clicks'],
+      paInstalls: ['pa_installs'],
+      paTrials: ['pa_purchases'],
+    };
+    const keys = synonyms[name] || [name];
+    for (const k of keys) {
+      const i = headers.findIndex(h => h.includes(k));
+      if (i >= 0) return i;
     }
-  }
-  return -1;
-}
-
-function parseCreators(rows) {
-  const hdrIdx = findCreatorTable(rows);
-  if (hdrIdx < 0) return [];
-
-  const hdr = rows[hdrIdx].map(h => h.toLowerCase().trim());
-
-  // --- DYNAMIC MAPPING ---
-  // This finds the index based on the header name so it doesn't break if columns move
-  const find = (keywords) => hdr.findIndex(h => keywords.some(k => h.includes(k)));
-
-  const colIdx = {
-    username: find(['username', 'creator']),
-    type:     find(['type', 'category']),
-    views:    find(['views', 'impressions']),
-    cost:     find(['content cost', 'fixed cost']),
-    oClicks:  find(['clicks']), // Usually the first 'clicks' is organic
-    oInstalls:find(['installs']),
-    oTrials:  find(['acquisitions', 'trials']),
-    // The PA columns usually appear later in the sheet
-    paSpend:  hdr.lastIndexOf('spend'), 
-    paImpr:   find(['pa_impressions', 'ad impressions']),
-    paClicks: find(['link clicks']),
-    paInstalls:find(['pa_installs']),
-    paTrials: find(['purchases', 'pa_trials'])
+    return -1;
   };
 
-  const creators = [];
-  for (let i = hdrIdx + 1; i < rows.length; i++) {
-    const r = rows[i];
-    // Skip rows that don't have a valid ID or Username
-    if (!r[0] || r[colIdx.username] === "") continue;
-
-    const safe = (idx) => (idx !== -1 && r[idx] !== undefined) ? r[idx] : '0';
-
-    creators.push({
-      id: r[0],
-      username: safe(colIdx.username).replace(/\\/g,'').replace(/^@/,''),
-      type: safe(colIdx.type),
-      views: cn(safe(colIdx.views)),
-      content_cost: cn(safe(colIdx.cost)),
-      org_clicks: cn(safe(colIdx.oClicks)),
-      org_installs: cn(safe(colIdx.oInstalls)),
-      org_trials: cn(safe(colIdx.oTrials)),
-      // PA DATA
-      pa_spend: cn(safe(colIdx.paSpend)),
-      pa_impressions: cn(safe(colIdx.paImpr)),
-      pa_link_clicks: cn(safe(colIdx.paClicks)),
-      pa_installs: cn(safe(colIdx.paInstalls)),
-      pa_trials: cn(safe(colIdx.paTrials)),
-    });
-  }
-  return creators;
-}
-
-function computeTotals(creators) {
-  const sum = key => creators.reduce((s,r) => s + (r[key]||0), 0);
-  return {
-    org_views:      sum('views'),
-    org_clicks:     sum('org_clicks'),
-    org_installs:   sum('org_installs'),
-    org_trials:     sum('org_trials'),
-    org_cost:       sum('content_cost'),
-    pa_spend:       sum('pa_spend'),
-    pa_impressions: sum('pa_impressions'),
-    pa_link_clicks: sum('pa_link_clicks'),
-    pa_installs:    sum('pa_installs'),
-    pa_trials:      sum('pa_trials'),
+  const C = {
+    id: col('id'), name: col('username'), type: col('type'),
+    orgViews: col('orgViews'), orgClicks: col('orgClicks'), orgInstalls: col('orgInstalls'), orgTrials: col('orgTrials'),
+    contentCost: col('contentCost'), paSpend: col('paSpend'),
+    paImpr: col('paImpr'), paClicks: col('paClicks'), paInstalls: col('paInstalls'), paTrials: col('paTrials'),
   };
+
+  const data = rows.slice(hIdx + 1)
+    .filter(r => r.length > 5 && r[C.name] && r[C.name] !== '' && !r[C.name].toLowerCase().includes('total'))
+    .map(r => {
+      const orgTrials = n(r[C.orgTrials]);
+      const paTrials = n(r[C.paTrials]);
+      const contentCost = n(r[C.contentCost]);
+      const paSpend = n(r[C.paSpend]);
+      const totalTrials = orgTrials + paTrials;
+      const totalSpend = contentCost + paSpend;
+      const blendCPTrial = totalTrials > 0 ? Math.round(totalSpend / totalTrials) : null;
+      const orgCPTrial = orgTrials > 0 ? Math.round(contentCost / orgTrials) : null;
+      return {
+        id: n(r[C.id]),
+        name: (r[C.name] || '').replace(/\\/g,''),
+        type: (r[C.type] || 'nano').toLowerCase(),
+        orgViews: n(r[C.orgViews]),
+        orgClicks: n(r[C.orgClicks]),
+        orgInstalls: n(r[C.orgInstalls]),
+        orgTrials, paSpend, contentCost, totalSpend,
+        paImpr: n(r[C.paImpr]),
+        paClicks: n(r[C.paClicks]),
+        paInstalls: n(r[C.paInstalls]),
+        paTrials, totalTrials, blendCPTrial, orgCPTrial,
+      };
+    })
+    .filter(c => c.name);
+
+  // Assign ROI scores based on blendCPTrial rank (lower = better)
+  const ranked = [...data].filter(c => c.blendCPTrial && c.blendCPTrial > 0)
+    .sort((a,b) => a.blendCPTrial - b.blendCPTrial);
+  ranked.forEach((c, i) => {
+    const pct = (i / ranked.length) * 100;
+    c.roiScore = Math.round(100 - pct);
+    c.roiGrade = pct < 20 ? 'S' : pct < 40 ? 'A' : pct < 60 ? 'B' : pct < 80 ? 'C' : 'D';
+  });
+  data.filter(c => !c.blendCPTrial || c.blendCPTrial === 0).forEach(c => {
+    c.roiScore = 0; c.roiGrade = 'D';
+  });
+
+  return data;
 }
 
-// ─── FETCH DATA ───────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// DATA FETCH
+// ═══════════════════════════════════════════════════════════════════
 async function fetchData() {
-  // Try CSV export first (requires sheet shared as viewer)
-  const urls = [CSV_URL, PUB_URL];
-  let raw = null, lastErr = null;
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      raw = await res.text();
-      if (raw && raw.length > 500) break;
-    } catch(e) { lastErr = e; }
+  setRefreshStatus('Fetching…');
+  try {
+    const res = await fetch(PROXY(CSV_URL), { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    if (!text || text.length < 100) throw new Error('Empty response');
+    const rows = parseCSV(text);
+    CREATORS = processRows(rows);
+    if (CREATORS.length === 0) throw new Error('No creators parsed');
+    lastFetch = new Date();
+    hideError();
+    renderAll();
+    setRefreshStatus(null);
+  } catch (e) {
+    console.error('Fetch error:', e);
+    showError(`Could not load sheet data: ${e.message}. Make sure the sheet is publicly shared.`);
+    setRefreshStatus('⚠ fetch failed — click to retry');
+    if (CREATORS.length > 0) renderAll(); // show cached data
+  } finally {
+    document.getElementById('loading-overlay').style.display = 'none';
   }
-  if (!raw || raw.length < 500) throw new Error(lastErr ? lastErr.message : 'Empty response');
-  return raw;
 }
 
-// ─── RENDER EXEC ─────────────────────────────────────────────────────────────
-function renderExec() {
-  const t = TOTALS;
-  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-  set('o-views',    num(t.org_views));
-  set('o-clicks',   num(t.org_clicks));
-  set('o-installs', num(t.org_installs));
-  set('o-trials',   num(t.org_trials));
-  set('o-spend',    rupee(t.org_cost));
-  set('o-cpc',      cpr(t.org_cost, t.org_clicks));
-  set('o-cpi',      cpr(t.org_cost, t.org_installs));
-  set('o-cpt',      cpr(t.org_cost, t.org_trials));
-  set('p-impr',     num(t.pa_impressions));
-  set('p-clicks',   num(t.pa_link_clicks));
-  set('p-installs', num(t.pa_installs));
-  set('p-trials',   num(t.pa_trials));
-  set('p-spend',    rupee(t.pa_spend));
-  set('p-cpm',      t.pa_impressions > 0 ? rupee(t.pa_spend * 1000 / t.pa_impressions) : '—');
-  set('p-cpi',      cpr(t.pa_spend, t.pa_installs));
-  set('p-cpt',      cpr(t.pa_spend, t.pa_trials));
-  const bV = t.org_views + t.pa_impressions;
-  const bC = t.org_clicks + t.pa_link_clicks;
-  const bI = t.org_installs + t.pa_installs;
-  const bT = t.org_trials + t.pa_trials;
-  const bS = t.org_cost + t.pa_spend;
-  set('b-views',    num(bV));
-  set('b-clicks',   num(bC));
-  set('b-installs', num(bI));
-  set('b-trials',   num(bT));
-  set('b-spend',    rupee(bS));
-  set('b-cpc',      cpr(bS, bC));
-  set('b-cpi',      cpr(bS, bI));
-  set('b-cpt',      cpr(bS, bT));
-
-  mkChart('trialDonut', 'doughnut', {
-    labels: ['Organic Trials', 'Meta PA Trials'],
-    datasets: [{ data:[t.org_trials, t.pa_trials], backgroundColor:['#00c896','#4f8ef7'], borderWidth:0, hoverOffset:4 }]
-  }, { plugins:{ legend:{ position:'right', labels:{ color:'#7b7fa8', font:{size:11} } } } });
-
-  const orgCPT  = t.org_trials  > 0 ? t.org_cost  / t.org_trials  : 0;
-  const paCPT   = t.pa_trials   > 0 ? t.pa_spend  / t.pa_trials   : 0;
-  const blendCPT= bT            > 0 ? bS          / bT            : 0;
-  mkChart('cptCompare', 'bar', {
-    labels: ['Organic CPTrial', 'Meta PA CPTrial', 'Blended CPTrial'],
-    datasets: [{
-      data:[Math.round(orgCPT), Math.round(paCPT), Math.round(blendCPT)],
-      backgroundColor:['rgba(0,200,150,0.3)','rgba(79,142,247,0.3)','rgba(181,108,251,0.3)'],
-      borderColor:['#00c896','#4f8ef7','#b56cfb'],
-      borderWidth:2, borderRadius:6,
-    }]
-  }, {
-    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ' ₹' + c.raw.toLocaleString('en-IN') } } },
-    scales:{ y:{ ticks:{ color:'#7b7fa8', callback: v => '₹'+v }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
-  });
-
-  const top15 = [...CREATORS].map(r => ({
-    name: '@'+r.username, org: r.org_trials, pa: r.pa_trials, tot: r.org_trials+r.pa_trials
-  })).sort((a,b)=>b.tot-a.tot).slice(0,15);
-  mkChart('topCreators','bar', {
-    labels: top15.map(r=>r.name),
-    datasets:[
-      { label:'Organic', data:top15.map(r=>r.org), backgroundColor:'rgba(0,200,150,0.7)', stack:'s' },
-      { label:'Meta PA', data:top15.map(r=>r.pa),  backgroundColor:'rgba(79,142,247,0.7)', stack:'s' },
-    ]
-  }, {
-    plugins:{ legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
-    scales:{ x:{ stacked:true, ticks:{ color:'#7b7fa8', font:{size:9} }, grid:{display:false} }, y:{ stacked:true, ticks:{ color:'#7b7fa8' }, grid:{ color:'rgba(255,255,255,0.05)' } } }
-  });
+function setRefreshStatus(msg) {
+  const el = document.getElementById('refresh-status');
+  if (msg) { el.textContent = msg; return; }
+  // Format "X min ago"
+  if (!lastFetch) { el.textContent = '⟳'; return; }
+  const diff = Math.floor((Date.now() - lastFetch) / 60000);
+  el.textContent = diff < 1 ? '⟳ just now' : `⟳ ${diff}m ago`;
 }
 
-// ─── FUNNEL ───────────────────────────────────────────────────────────────────
-function getFD(src) {
-  const t = TOTALS;
-  if (src === 'org') return {
-    stages:  [{ icon:'👁', lbl:'Views',    vol:t.org_views,    cpx: t.org_clicks   > 0 ? t.org_cost/t.org_views    : 0, conv:null },
-              { icon:'🖱', lbl:'Clicks',   vol:t.org_clicks,   cpx: t.org_installs > 0 ? t.org_cost/t.org_clicks   : 0, conv:t.org_views>0 ? t.org_clicks/t.org_views:0 },
-              { icon:'📥', lbl:'Installs', vol:t.org_installs, cpx: t.org_installs > 0 ? t.org_cost/t.org_installs : 0, conv:t.org_clicks>0 ? t.org_installs/t.org_clicks:0 },
-              { icon:'🧪', lbl:'Trials',   vol:t.org_trials,   cpx: t.org_trials   > 0 ? t.org_cost/t.org_trials   : 0, conv:t.org_installs>0 ? t.org_trials/t.org_installs:0 }],
-    color:'#00c896', spend:t.org_cost
-  };
-  if (src === 'pa') return {
-    stages:  [{ icon:'📺', lbl:'Impressions', vol:t.pa_impressions, cpx: t.pa_impressions>0 ? t.pa_spend/t.pa_impressions:0, conv:null },
-              { icon:'🔗', lbl:'Link Clicks', vol:t.pa_link_clicks, cpx: t.pa_link_clicks>0 ? t.pa_spend/t.pa_link_clicks:0, conv:t.pa_impressions>0 ? t.pa_link_clicks/t.pa_impressions:0 },
-              { icon:'📥', lbl:'Installs',    vol:t.pa_installs,    cpx: t.pa_installs>0    ? t.pa_spend/t.pa_installs:0,    conv:t.pa_link_clicks>0 ? t.pa_installs/t.pa_link_clicks:0 },
-              { icon:'🧪', lbl:'Trials',      vol:t.pa_trials,      cpx: t.pa_trials>0      ? t.pa_spend/t.pa_trials:0,      conv:t.pa_installs>0 ? t.pa_trials/t.pa_installs:0 }],
-    color:'#4f8ef7', spend:t.pa_spend
-  };
-  // blend
-  const bV=t.org_views+t.pa_impressions, bC=t.org_clicks+t.pa_link_clicks;
-  const bI=t.org_installs+t.pa_installs, bT=t.org_trials+t.pa_trials, bS=t.org_cost+t.pa_spend;
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+function hideError() { document.getElementById('error-banner').style.display = 'none'; }
+
+document.getElementById('refresh-status').onclick = fetchData;
+
+// ═══════════════════════════════════════════════════════════════════
+// AGGREGATE HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function agg() {
+  const tot = (k) => CREATORS.reduce((s,c) => s + (c[k]||0), 0);
+  const orgViews = tot('orgViews'), orgClicks = tot('orgClicks'),
+    orgInstalls = tot('orgInstalls'), orgTrials = tot('orgTrials'),
+    paImpr = tot('paImpr'), paClicks = tot('paClicks'), paInstalls = tot('paInstalls'),
+    paTrials = tot('paTrials'), contentCost = tot('contentCost'), paSpend = tot('paSpend');
+  const totalTrials = orgTrials + paTrials;
+  const totalSpend = contentCost + paSpend;
+  const cpClickOrg = orgClicks > 0 ? Math.round(contentCost / orgClicks) : 0;
+  const cpInstallOrg = orgInstalls > 0 ? Math.round(contentCost / orgInstalls) : 0;
+  const cpTrialOrg = orgTrials > 0 ? Math.round(contentCost / orgTrials) : 0;
+  const cpTrialPA = paTrials > 0 ? Math.round(paSpend / paTrials) : 0;
+  const cpTrialBlend = totalTrials > 0 ? Math.round(totalSpend / totalTrials) : 0;
   return {
-    stages:  [{ icon:'👁', lbl:'Views/Impr', vol:bV, cpx:bV>0?bS/bV:0, conv:null },
-              { icon:'🖱', lbl:'Clicks',      vol:bC, cpx:bC>0?bS/bC:0, conv:bV>0?bC/bV:0 },
-              { icon:'📥', lbl:'Installs',    vol:bI, cpx:bI>0?bS/bI:0, conv:bC>0?bI/bC:0 },
-              { icon:'🧪', lbl:'Trials',      vol:bT, cpx:bT>0?bS/bT:0, conv:bI>0?bT/bI:0 }],
-    color:'#b56cfb', spend:bS
+    orgViews, orgClicks, orgInstalls, orgTrials,
+    paImpr, paClicks, paInstalls, paTrials,
+    contentCost, paSpend, totalTrials, totalSpend,
+    cpClickOrg, cpInstallOrg, cpTrialOrg, cpTrialPA, cpTrialBlend,
+    totalClicks: orgClicks + paClicks,
+    totalInstalls: orgInstalls + paInstalls,
   };
 }
 
-function renderFunnel() {
-  const fd = getFD(fSrc);
-  const maxVol = Math.max(...fd.stages.map(s=>s.vol));
-  const vis = document.getElementById('funnelVis');
-  vis.innerHTML = fd.stages.map((s,i) => {
-    const fillPct = maxVol > 0 ? (s.vol / maxVol * 100) : 0;
-    return `<div class="funnel-stage" style="--stage-color:${fd.color}">
-      <div class="f-icon">${s.icon}</div>
-      <div class="f-label">${s.lbl}</div>
-      <div class="f-vol">${num(s.vol)}</div>
-      ${s.conv !== null ? `<div class="f-conv" style="color:${fd.color}">${pct(s.conv)}</div>` : '<div class="f-conv">—</div>'}
-      <div class="f-cpx">₹${s.cpx > 0 ? s.cpx.toFixed(2) : '—'}</div>
-      <div class="f-fill"></div>
+// ═══════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  const a = agg();
+  document.getElementById('creator-count').textContent = CREATORS.length;
+  renderExecMetrics(a);
+  renderTop15(a);
+  renderSpendChart(a);
+  renderTrialShare(a);
+  const activeFunnel = document.querySelector('#funnel-toggle .ftab.active');
+  if (activeFunnel) {
+    const m = activeFunnel.textContent.trim().toLowerCase().replace(' pa','').replace('meta','meta');
+    initFunnelCharts(funnelMode, a);
+  }
+  const lbPage = document.getElementById('page-leaderboard');
+  if (lbPage.classList.contains('active')) renderLeaderboard();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EXEC METRICS CARDS
+// ═══════════════════════════════════════════════════════════════════
+function inr(v) { if(!v||v===0) return '—'; return '₹'+Math.round(v).toLocaleString('en-IN'); }
+function fmt(v) { if(!v||v===0) return '—'; return Math.round(v).toLocaleString('en-IN'); }
+
+function renderExecMetrics(a) {
+  document.getElementById('exec-metrics').innerHTML = `
+  <div class="metric-card">
+    <div class="metric-badge badge-green">🌱 ORGANIC</div>
+    <div class="mrow"><span class="mk">Views / Impressions</span><span class="mv">${fmt(a.orgViews)}</span></div>
+    <div class="mrow"><span class="mk">Clicks</span><span class="mv">${fmt(a.orgClicks)}</span></div>
+    <div class="mrow"><span class="mk">Installs</span><span class="mv">${fmt(a.orgInstalls)}</span></div>
+    <div class="mrow"><span class="mk">Trials</span><span class="mv">${fmt(a.orgTrials)}</span></div>
+    <div class="mrow"><span class="mk">Content Spend</span><span class="mv">${inr(a.contentCost)}</span></div>
+    <div class="mrow"><span class="mk">CP Click</span><span class="mv">${inr(a.cpClickOrg)}</span></div>
+    <div class="mrow"><span class="mk">CP Install</span><span class="mv">${inr(a.cpInstallOrg)}</span></div>
+    <div class="mrow"><span class="mk">CP Trial</span><span class="mv v-purple">${inr(a.cpTrialOrg)}</span></div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge badge-blue">⚡ META PA</div>
+    <div class="mrow"><span class="mk">Impressions</span><span class="mv">${fmt(a.paImpr)||'—'}</span></div>
+    <div class="mrow"><span class="mk">Link Clicks</span><span class="mv">${fmt(a.paClicks)}</span></div>
+    <div class="mrow"><span class="mk">Installs</span><span class="mv">${fmt(a.paInstalls)||'—'}</span></div>
+    <div class="mrow"><span class="mk">Trials (Purchases)</span><span class="mv">${fmt(a.paTrials)}</span></div>
+    <div class="mrow"><span class="mk">Ad Spend</span><span class="mv">${inr(a.paSpend)||'₹0'}</span></div>
+    <div class="mrow"><span class="mk">CP Install</span><span class="mv">—</span></div>
+    <div class="mrow"><span class="mk">CP Trial</span><span class="mv v-green">${a.cpTrialPA > 0 ? inr(a.cpTrialPA) : '₹0'}</span></div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge badge-purple">🔮 BLENDED</div>
+    <div class="mrow"><span class="mk">Total Views + Impressions</span><span class="mv">${fmt(a.orgViews)}</span></div>
+    <div class="mrow"><span class="mk">Total Clicks</span><span class="mv">${fmt(a.totalClicks)}</span></div>
+    <div class="mrow"><span class="mk">Total Installs</span><span class="mv">${fmt(a.totalInstalls)}</span></div>
+    <div class="mrow"><span class="mk">Total Trials</span><span class="mv">${fmt(a.totalTrials)}</span></div>
+    <div class="mrow"><span class="mk">Total Spend</span><span class="mv">${inr(a.totalSpend)}</span></div>
+    <div class="mrow"><span class="mk">CP Click</span><span class="mv">${a.totalClicks > 0 ? inr(Math.round(a.totalSpend/a.totalClicks)) : '—'}</span></div>
+    <div class="mrow"><span class="mk">CP Install</span><span class="mv">${a.totalInstalls > 0 ? inr(Math.round(a.totalSpend/a.totalInstalls)) : '—'}</span></div>
+    <div class="mrow"><span class="mk">CP Trial</span><span class="mv v-purple">${inr(a.cpTrialBlend)}</span></div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TOP 15 HBAR
+// ═══════════════════════════════════════════════════════════════════
+function renderTop15(a) {
+  const top15 = [...CREATORS].sort((a,b) => b.totalTrials - a.totalTrials).slice(0,15);
+  const max = top15[0]?.totalTrials || 1;
+  document.getElementById('top15-hbar').innerHTML = top15.map(c => {
+    const orgW = Math.round((c.orgTrials/max)*100);
+    const paW = Math.round((c.paTrials/max)*100);
+    return `<div class="hbar-item">
+      <div class="hbar-label">@${c.name}</div>
+      <div class="hbar-track">
+        <div class="hbar-org" style="width:${orgW}%"></div>
+        <div class="hbar-pa" style="width:${paW}%"></div>
+      </div>
+      <div class="hbar-val">${c.totalTrials}</div>
     </div>`;
   }).join('');
+}
 
-  ['org','pa','blend'].forEach(s => {
-    const btn = document.getElementById('fp-'+s);
-    btn.className = s === fSrc ? `pill-${s}` : '';
-  });
-
-  mkChart('funnelVol','bar', {
-    labels: fd.stages.map(s=>s.lbl),
-    datasets:[{ label:'Volume', data:fd.stages.map(s=>s.vol), backgroundColor:fd.color+'55', borderColor:fd.color, borderWidth:2, borderRadius:6 }]
-  },{
-    plugins:{ legend:{display:false} },
-    scales:{ y:{ type:'logarithmic', ticks:{ color:'#7b7fa8', callback:v=>num(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
-  });
-
-  mkChart('funnelCpx','line', {
-    labels: fd.stages.map(s=>s.lbl),
-    datasets:[{ label:'CPX (₹)', data:fd.stages.map(s=>s.cpx>0?s.cpx:null), borderColor:fd.color, backgroundColor:fd.color+'22', fill:true, tension:0.4, pointRadius:6, pointBackgroundColor:fd.color }]
-  },{
-    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ' ₹' + (c.raw||0).toFixed(2) } } },
-    scales:{ y:{ ticks:{ color:'#7b7fa8', callback:v=>'₹'+v.toFixed(0) }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
+// ═══════════════════════════════════════════════════════════════════
+// SPEND + SHARE CHARTS
+// ═══════════════════════════════════════════════════════════════════
+function renderSpendChart(a) {
+  if (spendChart) spendChart.destroy();
+  const ctx = document.getElementById('spendChart').getContext('2d');
+  const median = a.cpTrialBlend;
+  spendChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['Organic CPTrial','Meta PA CPTrial','Blended CPTrial'],
+      datasets:[{
+        data:[a.cpTrialOrg, a.cpTrialPA||0, a.cpTrialBlend],
+        backgroundColor:['#1d9e75','#378add','#7c3aed'],
+        borderRadius:4, borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>'₹'+c.raw.toLocaleString('en-IN')}}
+      },
+      scales:{
+        y:{
+          ticks:{color:'#64748b',callback:v=>'₹'+v.toLocaleString()},
+          grid:{color:'rgba(255,255,255,.05)'}
+        },
+        x:{ticks:{color:'#94a3b8'},grid:{display:false}}
+      }
+    }
   });
 }
 
-window.setFunnelSrc = s => { fSrc = s; renderFunnel(); };
-
-// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
-function enrichCreators() {
-  return CREATORS.map(r => {
-    const blendSpend  = r.content_cost + r.pa_spend;
-    const blendTrials = r.org_trials + r.pa_trials;
-    const blendCPT    = blendTrials > 0 ? blendSpend / blendTrials : Infinity;
-    const orgCPT      = r.org_trials > 0 ? r.content_cost / r.org_trials : Infinity;
-    const paCPT       = r.pa_trials  > 0 ? r.pa_spend    / r.pa_trials  : Infinity;
-    const roi         = roiScore(r);
-    return { ...r, blendSpend, blendTrials, blendCPT, orgCPT, paCPT, roi_score: roi || 0 };
+function renderTrialShare(a) {
+  if (trialChart) trialChart.destroy();
+  if (!a.totalTrials) return;
+  const ctx = document.getElementById('trialShareChart').getContext('2d');
+  trialChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Organic Trials','Meta PA Trials'],
+      datasets:[{
+        data:[a.orgTrials, a.paTrials],
+        backgroundColor:['#1d9e75','#378add'],
+        borderWidth:0, holeRadius:0.6
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#94a3b8',boxWidth:12,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${Math.round(c.raw/a.totalTrials*100)}%)`}}
+      }
+    }
   });
 }
 
-function renderLB() {
-  const q = (document.getElementById('lb-search').value||'').toLowerCase();
-  let rows = enrichCreators().filter(r => !q || r.username.toLowerCase().includes(q));
+// ═══════════════════════════════════════════════════════════════════
+// FUNNEL PAGE
+// ═══════════════════════════════════════════════════════════════════
+function switchFunnel(mode, el) {
+  funnelMode = mode;
+  document.querySelectorAll('#funnel-toggle .ftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  initFunnelCharts(mode, agg());
+}
 
-  if (lbSort === 'blend_trials') rows.sort((a,b) => b.blendTrials - a.blendTrials);
-  else if (lbSort === 'blend_cpt') rows.sort((a,b) => {
-    if (a.blendTrials === 0) return 1; if (b.blendTrials === 0) return -1;
-    return a.blendCPT - b.blendCPT;
-  });
-  else if (lbSort === 'roi_score') rows.sort((a,b) => b.roi_score - a.roi_score);
-  else if (lbSort === 'pa_spend') rows.sort((a,b) => b.pa_spend - a.pa_spend);
-
-  const tbody = document.getElementById('lb-body');
-  tbody.innerHTML = rows.slice(0,80).map(r => {
-    const { grade, cls } = roiGrade(r.roi_score);
-    const orgCPTd = r.org_trials > 0 ? rupee(r.orgCPT) : '<span class="zero">—</span>';
-    const paCPTd  = r.pa_trials  > 0 ? rupee(r.paCPT)  : '<span class="zero">—</span>';
-    const blCPTd  = r.blendTrials > 0 ? rupee(r.blendCPT) : '<span class="zero">—</span>';
-
-    // Mini funnel bars: views→clicks→installs→trials (scaled to max click)
-    const maxBar = Math.max(r.org_clicks + r.pa_link_clicks, 1);
-    const bars = [
-      { h: Math.max(2, Math.round((r.org_clicks / (r.views||1)) * 16 * 100) / 100), c:'#00c896' },
-      { h: Math.max(2, Math.round(((r.org_installs+r.pa_installs) / Math.max(r.org_clicks+r.pa_link_clicks,1)) * 16 * 100)/100), c:'#4f8ef7' },
-      { h: Math.max(2, Math.round((r.blendTrials / Math.max(r.org_installs+r.pa_installs,1)) * 16 * 100)/100), c:'#b56cfb' },
+function initFunnelCharts(mode, a) {
+  let steps;
+  if (mode === 'organic') {
+    steps = [
+      {icon:'👁',label:'Views',val:a.orgViews,cost:a.orgViews>0?+(a.contentCost/a.orgViews).toFixed(2):null},
+      {icon:'🖱',label:'Clicks',val:a.orgClicks,conv:a.orgViews>0?((a.orgClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickOrg},
+      {icon:'📲',label:'Installs',val:a.orgInstalls,conv:a.orgClicks>0?((a.orgInstalls/a.orgClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallOrg},
+      {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg},
     ];
-    const miniFunnel = `<div class="mini-funnel">${bars.map(b=>`<div class="mf-bar" style="height:${Math.min(b.h,20)}px;background:${b.c}"></div>`).join('')}</div>`;
+  } else if (mode === 'meta') {
+    steps = [
+      {icon:'📡',label:'Impressions',val:a.paImpr,cost:null},
+      {icon:'🖱',label:'Link Clicks',val:a.paClicks,conv:a.paImpr>0?((a.paClicks/a.paImpr)*100).toFixed(2)+'%':null,cost:null},
+      {icon:'📲',label:'Installs',val:a.paInstalls||null,conv:null,cost:null},
+      {icon:'🎬',label:'Trials',val:a.paTrials,conv:null,cost:a.cpTrialPA||0},
+    ];
+  } else {
+    steps = [
+      {icon:'👁',label:'Views',val:a.orgViews,cost:null},
+      {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.orgViews>0?((a.totalClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:Math.round(a.totalSpend/(a.totalClicks||1))},
+      {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:Math.round(a.totalSpend/(a.totalInstalls||1))},
+      {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend},
+    ];
+  }
 
-    const typeCls = r.type.replace(' ','_').toLowerCase() || 'nano';
+  document.getElementById('funnel-steps').innerHTML = steps.map((s,i) =>
+    `<div class="funnel-step">${i<3?'<div class="step-arrow">›</div>':''}
+      <div class="step-icon">${s.icon}</div>
+      <div class="step-label">${s.label}</div>
+      <div class="step-num">${s.val ? s.val.toLocaleString('en-IN') : '—'}</div>
+      ${s.conv ? `<div class="step-conv">${s.conv}</div>` : ''}
+      ${s.cost != null ? `<div class="step-cost">${s.cost > 0 ? '₹'+s.cost.toLocaleString('en-IN') : '₹0'}</div>` : ''}
+    </div>`
+  ).join('');
+
+  const labels = steps.map(s=>s.label);
+  const vals = steps.map(s=>s.val||0);
+  const costs = steps.map(s=>s.cost||0);
+
+  if (fVolChart) fVolChart.destroy();
+  if (fCPXChart) fCPXChart.destroy();
+
+  fVolChart = new Chart(document.getElementById('fVolChart').getContext('2d'), {
+    type:'bar', data:{labels,datasets:[{data:vals,backgroundColor:'#1d9e75',borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{type:'logarithmic',ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
+  });
+
+  fCPXChart = new Chart(document.getElementById('fCPXChart').getContext('2d'), {
+    type:'line', data:{labels,datasets:[{data:costs,borderColor:'#2dd4bf',backgroundColor:'rgba(45,212,191,.1)',tension:.4,fill:true,pointBackgroundColor:'#2dd4bf',pointRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{color:'#64748b',callback:v=>'₹'+v.toLocaleString()},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════════════════
+function setSortLB(col, asc, el) {
+  lbSort = { col, asc };
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateHeaderArrows(col);
+  renderLeaderboard();
+}
+function setSortLBH(col, asc, el) {
+  lbSort = { col, asc };
+  document.querySelectorAll('th.sort-on').forEach(t=>t.classList.remove('sort-on'));
+  el.classList.add('sort-on');
+  updateHeaderArrows(col);
+  renderLeaderboard();
+}
+function updateHeaderArrows(col) {
+  document.querySelectorAll('.sar').forEach(s => {
+    const th = s.closest('th');
+    if (!th) return;
+    const thCol = th.getAttribute('onclick') || '';
+    s.textContent = thCol.includes(`'${col}'`) ? (lbSort.asc ? '↑' : '↓') : '⇅';
+  });
+}
+
+function roiBadge(g) {
+  const cls = g==='S'?'rs':g==='A'?'ra':g==='B'?'rb':g==='C'?'rc':'rd';
+  return `<div class="roi-b ${cls}">${g}</div>`;
+}
+
+function cpColor(v, median) {
+  if (!v || !median) return '';
+  if (v < median) return 'cell-good';
+  if (v > median * 2) return 'cell-bad';
+  return '';
+}
+
+function spark(n) {
+  const h = Math.max(4, Math.min(16, n));
+  const steps = [Math.round(h*.3), Math.round(h*.5), Math.round(h*.7), h];
+  return `<div class="sparkbar">${steps.map(x=>`<span style="height:${x}px"></span>`).join('')}</div>`;
+}
+
+function renderLeaderboard() {
+  const a = agg();
+  const median = a.cpTrialBlend;
+  const data = [...CREATORS].sort((x, y) => {
+    const av = x[lbSort.col] ?? (lbSort.asc ? Infinity : -1);
+    const bv = y[lbSort.col] ?? (lbSort.asc ? Infinity : -1);
+    return lbSort.asc ? av - bv : bv - av;
+  });
+
+  document.getElementById('lb-body').innerHTML = data.map(c => {
+    const tc = c.type==='micro'?'t-micro':c.type==='macro'?'t-macro':c.type==='mega'?'t-mega':'t-nano';
     return `<tr>
-      <td><div class="creator-cell"><span class="creator-name">@${r.username}</span><span class="creator-handle">ID ${r.id}</span></div></td>
-      <td><span class="type-badge ${typeCls}">${r.type||'—'}</span></td>
-      <td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><div class="roi-score ${cls}">${grade}</div><span style="font-size:10px;color:var(--text-muted)">${r.roi_score||'—'}</span></div></td>
-      <td>${orgCPTd}</td>
-      <td>${paCPTd}</td>
-      <td>${blCPTd}</td>
-      <td>${z(r.views)}</td>
-      <td>${z(r.org_clicks)}</td>
-      <td>${z(r.org_installs)}</td>
-      <td>${z(r.org_trials)}</td>
-      <td>${r.pa_spend > 0 ? rupee(r.pa_spend) : '<span class="zero">—</span>'}</td>
-      <td>${z(r.pa_impressions)}</td>
-      <td>${z(r.pa_link_clicks)}</td>
-      <td>${z(r.pa_installs)}</td>
-      <td>${z(r.pa_trials)}</td>
-      <td><strong>${z(r.blendTrials)}</strong></td>
-      <td>${r.blendSpend > 0 ? rupee(r.blendSpend) : '<span class="zero">—</span>'}</td>
-      <td>${miniFunnel}</td>
+      <td><div class="cname">@${c.name}</div><div class="cid">ID ${c.id}</div></td>
+      <td><span class="type-b ${tc}">${c.type.toUpperCase()}</span></td>
+      <td>${roiBadge(c.roiGrade||'D')}</td>
+      <td class="col-organic ${cpColor(c.orgCPTrial,median)}">${c.orgCPTrial?'₹'+c.orgCPTrial.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-organic">${c.orgViews?c.orgViews.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-organic">${c.orgClicks?c.orgClicks.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-organic">${c.orgInstalls?c.orgInstalls.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-organic">${c.orgTrials||'—'}</td>
+      <td class="col-pa">${c.paSpend?'₹'+c.paSpend.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-pa">${c.paImpr?c.paImpr.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-pa">${c.paClicks?c.paClicks.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-pa">${c.paInstalls?c.paInstalls.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-pa">${c.paTrials||'—'}</td>
+      <td class="col-blended" style="font-weight:700;color:var(--blue)">${c.totalTrials||'—'}</td>
+      <td class="col-blended">${c.totalSpend?'₹'+c.totalSpend.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-blended ${cpColor(c.blendCPTrial,median)}">${c.blendCPTrial?'₹'+c.blendCPTrial.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-funnel">${spark(c.totalTrials)}</td>
     </tr>`;
   }).join('');
+  applyColVis();
 }
 
-window.sortLB = (key, btn) => {
-  lbSort = key;
-  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderLB();
-};
-
-// ─── DIAGNOSIS ────────────────────────────────────────────────────────────────
-function renderDiagnosis() {
-  const t = TOTALS;
-  const flags = [];
-
-  const orgCPT = t.org_trials > 0 ? t.org_cost / t.org_trials : null;
-  const paCPT  = t.pa_trials  > 0 ? t.pa_spend / t.pa_trials  : null;
-
-  if (orgCPT && paCPT) {
-    if (paCPT < orgCPT * 0.7)
-      flags.push({ cls:'good', icon:'🚀', title:'Meta PA is outperforming Organic', text:`PA CPTrial (${rupee(paCPT)}) is ${Math.round((1-paCPT/orgCPT)*100)}% cheaper than Organic (${rupee(orgCPT)}). Allocate more budget to PA.` });
-    else if (paCPT > orgCPT * 1.3)
-      flags.push({ cls:'warn', icon:'⚠️', title:'PA CPTrial above Organic', text:`PA CPTrial (${rupee(paCPT)}) is ${Math.round((paCPT/orgCPT-1)*100)}% higher than Organic (${rupee(orgCPT)}). Review ad creative and targeting.` });
-    else
-      flags.push({ cls:'info', icon:'📊', title:'PA and Organic CPTrial are comparable', text:`Organic ${rupee(orgCPT)} · PA ${rupee(paCPT)}. Both channels are similarly efficient.` });
-  }
-
-  const paC2I = t.pa_link_clicks > 0 ? t.pa_installs / t.pa_link_clicks : 0;
-  if (paC2I < 0.02)
-    flags.push({ cls:'bad', icon:'📉', title:'Low PA click → install rate', text:`Only ${pct(paC2I)} of PA link clicks become installs. App store page or redirect may need optimisation.` });
-  else
-    flags.push({ cls:'good', icon:'✅', title:'Healthy PA click → install', text:`${pct(paC2I)} of PA link clicks convert to installs. Funnel top is healthy.` });
-
-  const paI2T = t.pa_installs > 0 ? t.pa_trials / t.pa_installs : 0;
-  if (paI2T < 0.1)
-    flags.push({ cls:'bad', icon:'🚨', title:'PA install → trial drop-off', text:`Only ${pct(paI2T)} of PA installs convert to trials. Onboarding or trial prompt may be broken.` });
-  else if (paI2T >= 0.15)
-    flags.push({ cls:'good', icon:'💎', title:'Strong PA install → trial conversion', text:`${pct(paI2T)} of PA installs become trials. Intent quality is high from Meta PA audience.` });
-
-  const orgI2T = t.org_installs > 0 ? t.org_trials / t.org_installs : 0;
-  flags.push({ cls: orgI2T >= 0.1 ? 'good' : 'warn', icon: orgI2T >= 0.1 ? '🌱' : '⚠️',
-    title: `Organic install → trial: ${pct(orgI2T)}`,
-    text: `${num(t.org_installs)} installs → ${num(t.org_trials)} trials organically. ${orgI2T >= 0.1 ? 'Good conversion.' : 'Below 10% — review trial onboarding flow.'}` });
-
-  // Best PA creator
-  const topPA = CREATORS.filter(r=>r.pa_trials>0).sort((a,b)=>(a.pa_spend/a.pa_trials)-(b.pa_spend/b.pa_trials))[0];
-  if (topPA) flags.push({ cls:'good', icon:'🏆', title:`Best PA CPTrial: @${topPA.username}`, text:`PA CPTrial of ${rupee(topPA.pa_spend/topPA.pa_trials)} with ${topPA.pa_trials} trials. Scale this creator's PA budget.` });
-
-  const grid = document.getElementById('flags-grid');
-  grid.innerHTML = flags.map(f => `<div class="flag-card ${f.cls}"><div class="flag-icon">${f.icon}</div><div><h4>${f.title}</h4><p>${f.text}</p></div></div>`).join('');
-
-  // Scatter 1: PA CPClick vs CPTrial
-  const sc1 = CREATORS.filter(r=>r.pa_trials>0 && r.pa_link_clicks>0).map(r=>({
-    x: parseFloat((r.pa_spend/r.pa_link_clicks).toFixed(2)),
-    y: parseFloat((r.pa_spend/r.pa_trials).toFixed(2)),
-    r: Math.max(4, Math.min(22, r.pa_trials * 1.5)),
-    label: r.username, trials: r.pa_trials
-  }));
-  mkChart('scatter1','bubble',{ datasets:[{ label:'Creator', data:sc1, backgroundColor:'rgba(79,142,247,0.5)', borderColor:'#4f8ef7', borderWidth:1 }] },{
-    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=>`@${c.raw.label} · CPClick:₹${c.raw.x} · CPTrial:₹${c.raw.y} · ${Math.round(c.raw.r/1.5)} trials` } } },
-    scales:{
-      x:{ title:{display:true,text:'CP Link Click (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} },
-      y:{ title:{display:true,text:'CP Trial (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} }
-    }
-  });
-
-  // Scatter 2: PA Spend vs CPTrial
-  const sc2 = CREATORS.filter(r=>r.pa_trials>0).map(r=>({
-    x: r.pa_spend, y: parseFloat((r.pa_spend/r.pa_trials).toFixed(2)), label:r.username
-  }));
-  mkChart('scatter2','scatter',{ datasets:[{ label:'Creator', data:sc2, backgroundColor:'rgba(181,108,251,0.5)', borderColor:'#b56cfb', pointRadius:7 }] },{
-    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=>`@${c.raw.label} · Spend:${rupee(c.raw.x)} · CPTrial:${rupee(c.raw.y)}` } } },
-    scales:{
-      x:{ title:{display:true,text:'PA Spend (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>rupee(v)}, grid:{color:'rgba(255,255,255,0.05)'} },
-      y:{ title:{display:true,text:'CP Trial (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} }
-    }
-  });
-
-  // Organic funnel conv chart
-  const topOrg = CREATORS.filter(r=>r.org_clicks>0).sort((a,b)=>b.org_clicks-a.org_clicks).slice(0,20);
-  mkChart('orgConvChart','bar',{
-    labels: topOrg.map(r=>'@'+r.username),
-    datasets:[
-      { label:'Click→Install %', data:topOrg.map(r=>r.org_clicks>0?+(r.org_installs/r.org_clicks*100).toFixed(1):0), backgroundColor:'rgba(0,200,150,0.6)', yAxisID:'y' },
-      { label:'Install→Trial %', data:topOrg.map(r=>r.org_installs>0?+(r.org_trials/r.org_installs*100).toFixed(1):0), backgroundColor:'rgba(79,142,247,0.6)', yAxisID:'y' },
-    ]
-  },{
-    plugins:{ legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
-    scales:{
-      x:{ ticks:{color:'#7b7fa8',font:{size:9}}, grid:{display:false} },
-      y:{ ticks:{color:'#7b7fa8',callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} }
-    }
+function toggleCol(g, el) {
+  colVis[g] = !colVis[g];
+  el.classList.toggle('on');
+  applyColVis();
+}
+function applyColVis() {
+  ['organic','pa','blended','funnel'].forEach(g => {
+    document.querySelectorAll(`.col-${g}`).forEach(el => el.style.display = colVis[g] ? '' : 'none');
   });
 }
 
-// ─── SEGMENTATION ─────────────────────────────────────────────────────────────
-function renderSeg() {
-  const enriched = enrichCreators().filter(r=>r.blendTrials>0);
-  const sorted = [...enriched].sort((a,b)=>a.blendCPT-b.blendCPT);
-  const medianCPT = sorted[Math.floor(sorted.length/2)]?.blendCPT || BENCH_CPT;
-  const medTrials = [...enriched].sort((a,b)=>b.blendTrials-a.blendTrials)[Math.floor(enriched.length/2)]?.blendTrials || 3;
-
-  const buckets = [
-    { key:'scale',   emoji:'🟢', title:'Scale Now',    sub:'Low CPTrial · High Trials',  test: r=>r.blendCPT<medianCPT && r.blendTrials>=medTrials, action:'Increase budget & PA spend immediately' },
-    { key:'optim',   emoji:'🟡', title:'Optimise',     sub:'High CPTrial · High Trials', test: r=>r.blendCPT>=medianCPT && r.blendTrials>=medTrials, action:'Review creative & targeting to cut CPTrial' },
-    { key:'test',    emoji:'🔵', title:'Test & Learn', sub:'Low CPTrial · Low Trials',   test: r=>r.blendCPT<medianCPT && r.blendTrials<medTrials,  action:'Increase PA budget to validate at scale' },
-    { key:'pause',   emoji:'🔴', title:'Pause / Review', sub:'High CPTrial · Low Trials', test: r=>r.blendCPT>=medianCPT && r.blendTrials<medTrials, action:'Pause PA spend; review content angle' },
-  ];
-
-  const colMap = {scale:'var(--accent-org)',optim:'var(--accent-warn)',test:'var(--accent-pa)',pause:'var(--accent-red)'};
-
-  document.getElementById('bucket-grid').innerHTML = buckets.map(b => {
-    const members = enriched.filter(b.test);
-    const chips = members.slice(0,8).map(r=>`<span class="creator-chip">@${r.username}</span>`).join('');
-    const more = members.length > 8 ? `<span class="creator-chip">+${members.length-8} more</span>` : '';
-    return `<div class="bucket-card" style="border-color:${colMap[b.key]}33">
-      <div class="b-head"><div class="b-emoji">${b.emoji}</div><div><h4 style="color:${colMap[b.key]}">${b.title}</h4><div class="b-sub">${b.sub}</div></div></div>
-      <div class="b-count" style="color:${colMap[b.key]}">${members.length}<span style="font-size:14px;color:var(--text-muted);font-weight:500"> creators</span></div>
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">💡 ${b.action}</div>
-      <div class="creator-chips">${chips}${more}</div>
-    </div>`;
-  }).join('');
-
-  // Type breakdown charts
-  const typeGroups = {};
-  CREATORS.forEach(r => {
-    const t = r.type || 'unknown';
-    if (!typeGroups[t]) typeGroups[t] = { count:0, trials:0, spend:0 };
-    typeGroups[t].count++;
-    typeGroups[t].trials += r.org_trials + r.pa_trials;
-    typeGroups[t].spend  += r.content_cost + r.pa_spend;
-  });
-  const types = Object.entries(typeGroups).sort((a,b)=>b[1].trials-a[1].trials);
-  const typeColors = { macro:'#f25f5c', micro:'#4f8ef7', nano:'#00c896', ultra_nano:'#b56cfb', unknown:'#7b7fa8' };
-  const tLabels = types.map(([t])=>t);
-  const tCPTs   = types.map(([,d])=>d.trials>0?Math.round(d.spend/d.trials):0);
-  const tTrials = types.map(([,d])=>d.trials);
-  const tCols   = types.map(([t])=>typeColors[t]||'#888');
-
-  mkChart('typeCpt','bar',{
-    labels:tLabels, datasets:[{ label:'CPTrial (₹)', data:tCPTs, backgroundColor:tCols.map(c=>c+'66'), borderColor:tCols, borderWidth:2, borderRadius:6 }]
-  },{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#7b7fa8',callback:v=>'₹'+v},grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#7b7fa8'},grid:{display:false}} } });
-
-  mkChart('typeTrials','bar',{
-    labels:tLabels, datasets:[{ label:'Total Trials', data:tTrials, backgroundColor:tCols.map(c=>c+'66'), borderColor:tCols, borderWidth:2, borderRadius:6 }]
-  },{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#7b7fa8'},grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#7b7fa8'},grid:{display:false}} } });
+// ═══════════════════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'funnel') initFunnelCharts(funnelMode, agg());
+  if (id === 'leaderboard') renderLeaderboard();
 }
 
-// ─── CHART HELPER ────────────────────────────────────────────────────────────
-function mkChart(id, type, data, extraOpts) {
-  if (CHARTS[id]) CHARTS[id].destroy();
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  CHARTS[id] = new Chart(ctx, {
-    type, data,
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      animation:{ duration:400 },
-      plugins: { legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
-      ...extraOpts
-    }
-  });
-}
+// ═══════════════════════════════════════════════════════════════════
+// REFRESH COUNTER + AUTO REFRESH
+// ═══════════════════════════════════════════════════════════════════
+setInterval(() => setRefreshStatus(null), 30000);
+setInterval(fetchData, AUTO_REFRESH_MS);
 
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
-window.showSec = (id, btn) => {
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('sec-'+id).classList.add('active');
-  btn.classList.add('active');
-  if (id==='funnel')      renderFunnel();
-  if (id==='leaderboard') renderLB();
-  if (id==='diagnosis')   renderDiagnosis();
-  if (id==='segmentation')renderSeg();
-};
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
-(async () => {
-  try {
-    const raw = await fetchData();
-    const csvRows = parseCSV(raw);
-    const creators = parseCreators(csvRows);
-    if (!creators || creators.length < 5) throw new Error(`Only ${creators ? creators.length : 0} rows parsed — check sheet sharing settings.`);
-    CREATORS = creators;
-    TOTALS   = computeTotals(creators);
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('last-updated').textContent =
-      `${creators.length} creators · refreshed ${new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}`;
-    renderExec();
-  } catch(e) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-box').style.display = 'block';
-    document.getElementById('error-detail').textContent = e.message +
-      '\n\nTo fix: In Google Sheets → Share → "Anyone with the link" → Viewer. Then reload.';
-    console.error(e);
-  }
-})();
+// ═══════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════
+fetchData();
 </script>
 </body>
 </html>
