@@ -86,88 +86,162 @@ td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 </div>
 
 <script>
+// 1. The Link
 const PUBLISHED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGQ1U2rmf9M0BODebWeLV-1bxQOETA3i6DE54EqMkr73MyguQaSFO4P1UnIf0-elB6VWwK83fe2c6Q/pub?gid=0&single=true&output=csv';
 
+// 2. Global State
+let CREATORS = [];
+let TOTALS = {};
+let CHARTS = {};
+const BENCH_CPT = 500;
+
+// 3. Helper: Clean numbers from strings (handles ₹, %, commas)
+const cn = s => {
+    if (s === undefined || s === null || s === '') return 0;
+    const n = parseFloat(String(s).replace(/[₹,%\s]/g, ''));
+    return isNaN(n) ? 0 : n;
+};
+
+// 4. The Main Engine
 async function init() {
-  const loadingEl = document.getElementById('loading');
-  try {
-    console.log("Attempting to fetch data from:", PUBLISHED_CSV_URL);
-    
-    // Adding a cache-buster to ensure we aren't seeing old data
-    const response = await fetch(`${PUBLISHED_CSV_URL}&cache_bust=${Date.now()}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP Error! Status: ${response.status}`);
-    }
+    console.log("🚀 Dashboard initializing...");
+    const loadingEl = document.getElementById('loading');
+    const appEl = document.getElementById('app');
 
-    const csvText = await response.text();
-    console.log("Raw CSV Data Sample:", csvText.substring(0, 200)); // Log first 200 chars
+    try {
+        const response = await fetch(`${PUBLISHED_CSV_URL}&t=${Date.now()}`);
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        
+        const csvText = await response.text();
+        console.log("📥 CSV Data Received. Length:", csvText.length);
 
-    // Check if we actually got HTML (the login page) instead of CSV
-    if (csvText.includes('<!DOCTYPE html>') || csvText.includes('google-signin')) {
-      throw new Error("Received HTML instead of CSV. Is the sheet definitely 'Published to Web' and not just 'Shared'?");
-    }
+        // Split rows and handle potential empty lines
+        const allRows = csvText.split(/\r?\n/).map(line => 
+            line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(item => item.trim().replace(/^"|"$/g, ''))
+        ).filter(row => row.length > 1);
 
-    // Parse rows (Handling both \n and \r\n line endings)
-    const rows = csvText.split(/\r?\n/).map(row => {
-      // Improved CSV split to handle quotes and commas
-      return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
-    });
+        // Find the Header Row (Look for 'Influencer' or 'Username')
+        const headerRowIdx = allRows.findIndex(row => 
+            row.join(' ').toLowerCase().includes('influencer') || 
+            row.join(' ').toLowerCase().includes('username')
+        );
 
-    if (rows.length < 2) throw new Error("CSV seems empty or poorly formatted.");
+        if (headerRowIdx === -1) throw new Error("Could not find header row in Google Sheet.");
 
-    const header = rows[0].map(h => h.toLowerCase().trim());
-    console.log("Detected Headers:", header);
+        const header = allRows[headerRowIdx].map(h => h.toLowerCase().trim());
+        const dataRows = allRows.slice(headerRowIdx + 1);
 
-    // Map columns dynamically
-    const findIdx = (terms) => {
-      const i = header.findIndex(h => terms.some(t => h.includes(t)));
-      return i === -1 ? null : i;
-    };
+        console.log("📋 Found Headers:", header);
 
-    const idx = {
-      user: findIdx(['username', 'influencer']),
-      type: findIdx(['type', 'category']),
-      oTrials: findIdx(['acquisitions', 'registrations', 'trials']),
-      paTrials: findIdx(['pa_trials', 'pa_purchases', 'purchases']),
-      oCost: findIdx(['content cost', 'fee']),
-      paCost: findIdx(['pa_spend', 'ad spend', 'spend'])
-    };
-
-    console.log("Mapped Column Indices:", idx);
-
-    CREATORS = rows.slice(1)
-      .filter(r => r[idx.user]) // Skip rows with no username
-      .map((r, i) => {
-        return {
-          user: (r[idx.user] || `ID_${i}`).replace(/^@/,''),
-          type: r[idx.type] || 'Nano',
-          oTrials: cn(r[idx.oTrials]),
-          paTrials: cn(r[idx.paTrials]),
-          oCost: cn(r[idx.oCost]),
-          paCost: cn(r[idx.paCost])
+        // Column Mapping Helper
+        const getIdx = (keywords) => {
+            const index = header.findIndex(h => keywords.some(k => h.includes(k)));
+            return index === -1 ? null : index;
         };
-      });
 
-    if (CREATORS.length === 0) throw new Error("No creator data found after parsing.");
+        const idx = {
+            user: getIdx(['username', 'influencer']),
+            type: getIdx(['type', 'category']),
+            oTrials: getIdx(['acquisitions', 'registrations', 'trials']),
+            paTrials: getIdx(['pa_trials', 'pa_purchases', 'purchases']),
+            oCost: getIdx(['content cost', 'fee', 'base cost']),
+            paCost: getIdx(['pa_spend', 'ad spend', 'spend'])
+        };
 
-    renderDashboard();
-    loadingEl.style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+        console.log("📍 Column Mapping:", idx);
 
-  } catch (err) {
-    console.error("Dashboard Error:", err);
-    loadingEl.innerHTML = `
-      <div style="color:#f25f5c; padding:20px; border:1px solid #f25f5c; border-radius:8px; background:rgba(242,95,92,0.1);">
-        <h3>⚠️ Connection Error</h3>
-        <p>${err.message}</p>
-        <p style="font-size:11px; margin-top:10px; color:var(--text-muted);">
-          Check the Browser Console (F12) for technical details.
-        </p>
-        <button onclick="location.reload()" style="margin-top:15px; padding:8px 16px; background:var(--accent-pa); color:white; border:none; border-radius:4px; cursor:pointer;">Retry Connection</button>
-      </div>
-    `;
-  }
-}</script>
+        // Parse Creator Data
+        CREATORS = dataRows.filter(r => r[idx.user]).map((r, i) => {
+            const oT = cn(r[idx.oTrials]);
+            const pT = cn(r[idx.paTrials]);
+            const oC = cn(r[idx.oCost]);
+            const pC = cn(r[idx.paCost]);
+
+            return {
+                user: r[idx.user].replace(/^@/, ''),
+                type: r[idx.type] || 'Nano',
+                oTrials: oT,
+                paTrials: pT,
+                totalTrials: oT + pT,
+                oCost: oC,
+                paCost: pC,
+                totalCost: oC + pC
+            };
+        });
+
+        if (CREATORS.length === 0) throw new Error("Parsed 0 creators. Check column names.");
+
+        // Calculate Totals
+        TOTALS = CREATORS.reduce((acc, c) => ({
+            oT: acc.oT + c.oTrials,
+            pT: acc.pT + c.paTrials,
+            totalCost: acc.totalCost + c.totalCost
+        }), { oT: 0, pT: 0, totalCost: 0 });
+
+        console.log("📊 Totals Calculated:", TOTALS);
+
+        // Final Render
+        renderDashboard();
+        
+        loadingEl.style.display = 'none';
+        appEl.style.display = 'block';
+
+    } catch (err) {
+        console.error("❌ Critical Error:", err);
+        loadingEl.innerHTML = `<div style="color:#ff4d4d; background:#2a1a1a; padding:20px; border-radius:8px; border:1px solid #4a2a2a;">
+            <h3>Dashboard Error</h3>
+            <p>${err.message}</p>
+            <button onclick="location.reload()" style="margin-top:10px; cursor:pointer;">Retry</button>
+        </div>`;
+    }
+}
+
+function renderDashboard() {
+    // Update UI Cards
+    document.getElementById('o-trials-val').textContent = TOTALS.oT.toLocaleString();
+    document.getElementById('p-trials-val').textContent = TOTALS.pT.toLocaleString();
+    
+    const bCpt = (TOTALS.oT + TOTALS.pT) > 0 ? TOTALS.totalCost / (TOTALS.oT + TOTALS.pT) : 0;
+    document.getElementById('b-cpt-val').textContent = '₹' + Math.round(bCpt).toLocaleString();
+
+    // Leaderboard
+    const lb = document.getElementById('leaderboard-body');
+    const sorted = [...CREATORS].sort((a,b) => b.totalTrials - a.totalTrials).slice(0, 10);
+    
+    lb.innerHTML = sorted.map(c => `
+        <tr>
+            <td><b style="color:var(--accent-pa)">@${c.user}</b></td>
+            <td><span style="font-size:10px; opacity:0.7;">${c.type}</span></td>
+            <td style="text-align:right">${c.totalTrials}</td>
+            <td style="text-align:right">₹${Math.round(c.totalCost / (c.totalTrials || 1))}</td>
+        </tr>
+    `).join('');
+
+    // Update Chart
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    if (CHARTS.main) CHARTS.main.destroy();
+    CHARTS.main = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sorted.map(c => c.user),
+            datasets: [
+                { label: 'Organic', data: sorted.map(c => c.oTrials), backgroundColor: '#00c896' },
+                { label: 'Meta PA', data: sorted.map(c => c.paTrials), backgroundColor: '#4f8ef7' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#2a2a4a' }, ticks: { color: '#7b7fa8' } },
+                x: { grid: { display: false }, ticks: { color: '#7b7fa8' } }
+            },
+            plugins: { legend: { labels: { color: '#7b7fa8' } } }
+        }
+    });
+}
+
+// Start the app
+window.addEventListener('DOMContentLoaded', init);</script>
 </body>
 </html>
