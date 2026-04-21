@@ -608,40 +608,49 @@ function parseCreators(rows) {
 
   const hdr = rows[hdrIdx].map(h => h.toLowerCase().trim());
 
-  // Map column indices dynamically
-  const col = name => hdr.findIndex(h => h.includes(name));
+  // --- DYNAMIC MAPPING ---
+  // This finds the index based on the header name so it doesn't break if columns move
+  const find = (keywords) => hdr.findIndex(h => keywords.some(k => h.includes(k)));
 
-  // Try to find columns by content keywords
-  // Based on what we know from markdown analysis:
-  // cols: ID, Username, URL, Type, Followers, Views, Status, ContentCost, ConvCost, TotalCost,
-  //       Reel1, Date, Clicks, Installs, Registrations, Acquisitions, Subscription,
-  //       PA_Spend, PA_Impressions, PA_VideoViews, PA_LinkClicks, PA_Installs, PA_Purchases
+  const colIdx = {
+    username: find(['username', 'creator']),
+    type:     find(['type', 'category']),
+    views:    find(['views', 'impressions']),
+    cost:     find(['content cost', 'fixed cost']),
+    oClicks:  find(['clicks']), // Usually the first 'clicks' is organic
+    oInstalls:find(['installs']),
+    oTrials:  find(['acquisitions', 'trials']),
+    // The PA columns usually appear later in the sheet
+    paSpend:  hdr.lastIndexOf('spend'), 
+    paImpr:   find(['pa_impressions', 'ad impressions']),
+    paClicks: find(['link clicks']),
+    paInstalls:find(['pa_installs']),
+    paTrials: find(['purchases', 'pa_trials'])
+  };
+
   const creators = [];
   for (let i = hdrIdx + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r[0] || isNaN(parseInt(r[0]))) continue;
-    const id = parseInt(r[0]);
-    if (!id) continue;
+    // Skip rows that don't have a valid ID or Username
+    if (!r[0] || r[colIdx.username] === "") continue;
 
-    const safe = idx => r[idx] !== undefined ? r[idx] : '';
+    const safe = (idx) => (idx !== -1 && r[idx] !== undefined) ? r[idx] : '0';
 
     creators.push({
-      id,
-      username: safe(1).replace(/\\/g,'').replace(/^@/,''),
-      url: safe(2),
-      type: safe(3),
-      followers: cn(safe(4)),
-      views: cn(safe(5)),
-      content_cost: cn(safe(7)),
-      org_clicks: cn(safe(12)),
-      org_installs: cn(safe(13)),
-      org_trials: cn(safe(15)),
-      pa_spend: cn(safe(17)),
-      pa_impressions: cn(safe(18)),
-      pa_video_views: cn(safe(19)),
-      pa_link_clicks: cn(safe(20)),
-      pa_installs: cn(safe(21)),
-      pa_trials: cn(safe(22)),
+      id: r[0],
+      username: safe(colIdx.username).replace(/\\/g,'').replace(/^@/,''),
+      type: safe(colIdx.type),
+      views: cn(safe(colIdx.views)),
+      content_cost: cn(safe(colIdx.cost)),
+      org_clicks: cn(safe(colIdx.oClicks)),
+      org_installs: cn(safe(colIdx.oInstalls)),
+      org_trials: cn(safe(colIdx.oTrials)),
+      // PA DATA
+      pa_spend: cn(safe(colIdx.paSpend)),
+      pa_impressions: cn(safe(colIdx.paImpr)),
+      pa_link_clicks: cn(safe(colIdx.paClicks)),
+      pa_installs: cn(safe(colIdx.paInstalls)),
+      pa_trials: cn(safe(colIdx.paTrials)),
     });
   }
   return creators;
