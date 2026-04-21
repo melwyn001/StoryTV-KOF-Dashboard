@@ -4,9 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>StoryTV · Creator CPX Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <style>
-/* CSS styles remain consistent with your brand colors */
 :root {
   --bg: #0f0f1a;
   --surface: #1a1a2e;
@@ -15,233 +14,1072 @@
   --accent-org: #00c896;
   --accent-pa: #4f8ef7;
   --accent-blend: #b56cfb;
+  --accent-warn: #f5a623;
+  --accent-red: #f25f5c;
   --text: #e8eaf6;
   --text-muted: #7b7fa8;
+  --text-dim: #4a4d6e;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
-header { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,#4f8ef7,#b56cfb); border-radius: 8px; display:flex; align-items:center; justify-content:center; }
-#app { display:none; padding: 20px; }
-.ccard { background: var(--surface); border-radius:12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
-.compare-3 { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; }
-.chart-panel { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:16px; min-height: 300px; }
-table { width:100%; border-collapse:collapse; margin-top: 20px; }
-th { text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; padding: 10px; border-bottom: 1px solid var(--border); }
-td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.roi-badge { padding: 4px 8px; border-radius: 6px; font-weight: bold; background: rgba(79,142,247,0.1); color: var(--accent-pa); }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; min-height: 100vh; }
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,#4f8ef7,#b56cfb); border-radius: 8px; display:flex;align-items:center;justify-content:center; font-size:16px; }
+.logo h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; }
+.logo span { font-size: 10px; color: var(--text-muted); display:block; margin-top:1px; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.live-badge { display:flex;align-items:center;gap:5px; font-size:11px; color:var(--accent-org); font-weight:600; }
+.live-dot { width:6px;height:6px;border-radius:50%;background:var(--accent-org); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+#last-updated { font-size:11px; color:var(--text-muted); }
+
+/* ── LOADING ── */
+#loading {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height: 60vh; gap:16px;
+}
+.spinner { width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent-pa);border-radius:50%;animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading p { color:var(--text-muted); font-size:13px; }
+#error-box { display:none; text-align:center; padding:60px 20px; }
+#error-box h2 { color:var(--accent-red); margin-bottom:8px; }
+#error-box p { color:var(--text-muted); font-size:12px; margin-bottom:16px; }
+#error-box button { padding:8px 20px; background:var(--accent-pa); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; }
+
+/* ── NAV ── */
+#app { display:none; }
+nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap:0; overflow-x:auto; padding: 0 16px;
+}
+nav button {
+  padding: 12px 16px; border:none; background:none; cursor:pointer;
+  font-size:12px; font-weight:600; color:var(--text-muted);
+  border-bottom: 2px solid transparent; white-space:nowrap;
+  transition: all 0.15s; display:flex;align-items:center;gap:6px;
+}
+nav button:hover { color:var(--text); background: rgba(255,255,255,0.03); }
+nav button.active { color:var(--accent-pa); border-bottom-color:var(--accent-pa); }
+
+/* ── SECTIONS ── */
+.section { padding: 20px 24px; display:none; animation: fadeIn 0.2s ease; }
+.section.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── SECTION HEADER ── */
+.sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.sec-title { font-size:14px; font-weight:700; color:var(--text); }
+.sec-subtitle { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+/* ── SOURCE PILLS ── */
+.source-pills { display:flex; gap:6px; }
+.source-pills button {
+  padding:5px 14px; border-radius:20px; border:1.5px solid var(--border);
+  background:transparent; cursor:pointer; font-size:11px; font-weight:700;
+  color:var(--text-muted); transition:all 0.15s; letter-spacing:0.3px;
+}
+.source-pills button.pill-org { border-color:var(--accent-org); color:var(--accent-org); background:rgba(0,200,150,0.08); }
+.source-pills button.pill-pa { border-color:var(--accent-pa); color:var(--accent-pa); background:rgba(79,142,247,0.08); }
+.source-pills button.pill-blend { border-color:var(--accent-blend); color:var(--accent-blend); background:rgba(181,108,251,0.08); }
+.source-pills button:not(.pill-org):not(.pill-pa):not(.pill-blend) { opacity:0.4; }
+
+/* ── 3-COL COMPARE ── */
+.compare-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+.ccard {
+  background: var(--surface); border-radius:12px;
+  border: 1px solid var(--border); overflow:hidden;
+}
+.ccard-head {
+  padding:10px 14px; display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.ccard-head .dot { width:8px;height:8px;border-radius:50%; flex-shrink:0; }
+.ccard-head .dot.org { background:var(--accent-org); box-shadow:0 0 6px var(--accent-org); }
+.ccard-head .dot.pa { background:var(--accent-pa); box-shadow:0 0 6px var(--accent-pa); }
+.ccard-head .dot.blend { background:var(--accent-blend); box-shadow:0 0 6px var(--accent-blend); }
+.ccard-head h3 { font-size:11px; font-weight:700; letter-spacing:0.5px; }
+.ccard-head h3.org { color:var(--accent-org); }
+.ccard-head h3.pa { color:var(--accent-pa); }
+.ccard-head h3.blend { color:var(--accent-blend); }
+.ccard-row { padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center; }
+.ccard-row:last-child { border-bottom:none; }
+.ccard-row .lbl { font-size:10px; color:var(--text-muted); font-weight:500; }
+.ccard-row .val { font-size:12px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+.ccard-row.highlight .val { font-size:14px; }
+.ccard-row.highlight.org .val { color:var(--accent-org); }
+.ccard-row.highlight.pa .val { color:var(--accent-pa); }
+.ccard-row.highlight.blend .val { color:var(--accent-blend); }
+
+/* ── STAT CARDS ── */
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.stat-card {
+  background:var(--surface); border-radius:10px; padding:14px 16px;
+  border:1px solid var(--border); position:relative; overflow:hidden;
+}
+.stat-card::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--accent-col,var(--accent-pa));
+}
+.stat-card .s-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; }
+.stat-card .s-val { font-size:20px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
+.stat-card .s-sub { font-size:10px; color:var(--text-muted); margin-top:5px; }
+.stat-card .s-trend { font-size:10px; font-weight:700; margin-top:4px; }
+.trend-up { color:var(--accent-org); }
+.trend-down { color:var(--accent-red); }
+
+/* ── CHART PANELS ── */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.chart-panel {
+  background:var(--surface); border-radius:12px; border:1px solid var(--border);
+  padding:16px; position:relative;
+}
+.chart-panel.full { grid-column:1/-1; }
+.chart-panel h3 { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; }
+.chart-panel .chart-sub { font-size:10px; color:var(--text-dim); margin-top:-8px; margin-bottom:10px; }
+canvas { max-width:100%; }
+
+/* ── FUNNEL VISUAL ── */
+.funnel-visual { display:flex; gap:0; margin-bottom:20px; align-items:stretch; }
+.funnel-stage {
+  flex:1; background:var(--surface); border:1px solid var(--border);
+  padding:14px 12px; position:relative; text-align:center;
+  cursor:default;
+}
+.funnel-stage:not(:last-child)::after {
+  content:'▶'; position:absolute; right:-10px; top:50%; transform:translateY(-50%);
+  color:var(--text-dim); font-size:12px; z-index:1;
+}
+.funnel-stage:first-child { border-radius:10px 0 0 10px; }
+.funnel-stage:last-child { border-radius:0 10px 10px 0; }
+.funnel-stage .f-icon { font-size:18px; margin-bottom:4px; }
+.funnel-stage .f-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+.funnel-stage .f-vol { font-size:16px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; }
+.funnel-stage .f-conv { font-size:10px; margin-top:4px; font-weight:600; }
+.funnel-stage .f-cpx { font-size:10px; color:var(--text-muted); margin-top:3px; }
+.funnel-stage.active-stage { border-color:var(--stage-color,var(--accent-pa)); background:rgba(79,142,247,0.06); }
+.funnel-stage .f-fill {
+  position:absolute; bottom:0; left:0; right:0; height:3px;
+  background:var(--stage-color,var(--accent-pa));
+  opacity:0.7;
+}
+
+/* ── LEADERBOARD ── */
+.lb-controls { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+.lb-controls .sort-btn {
+  padding:5px 12px; border-radius:6px; border:1px solid var(--border);
+  background:transparent; cursor:pointer; font-size:11px; font-weight:600;
+  color:var(--text-muted); transition:all 0.15s;
+}
+.lb-controls .sort-btn.active { background:var(--accent-pa); color:#fff; border-color:var(--accent-pa); }
+.lb-controls .filter-input {
+  padding:5px 12px; border-radius:6px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--text); font-size:11px;
+  outline:none; width:160px;
+}
+.lb-controls .filter-input::placeholder { color:var(--text-dim); }
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:900px; }
+thead th {
+  background:var(--surface2); padding:8px 10px; text-align:right;
+  font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;
+  letter-spacing:0.4px; white-space:nowrap; border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+}
+thead th:first-child { text-align:left; }
+tbody td {
+  padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.03);
+  text-align:right; color:var(--text); font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+tbody td:first-child { text-align:left; }
+tbody tr:hover td { background:rgba(255,255,255,0.025); }
+.creator-cell { display:flex; flex-direction:column; }
+.creator-name { font-weight:700; font-size:12px; color:var(--text); }
+.creator-handle { font-size:10px; color:var(--text-muted); }
+.type-badge {
+  display:inline-block; padding:2px 7px; border-radius:8px; font-size:9px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.4px;
+}
+.type-badge.macro { background:rgba(242,95,92,0.15); color:#f25f5c; border:1px solid rgba(242,95,92,0.3); }
+.type-badge.micro { background:rgba(79,142,247,0.15); color:#4f8ef7; border:1px solid rgba(79,142,247,0.3); }
+.type-badge.nano { background:rgba(0,200,150,0.15); color:#00c896; border:1px solid rgba(0,200,150,0.3); }
+.type-badge.ultra_nano { background:rgba(181,108,251,0.15); color:#b56cfb; border:1px solid rgba(181,108,251,0.3); }
+.zero { color:var(--text-dim); }
+
+/* ── ROI SCORE ── */
+.roi-score {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:36px; height:36px; border-radius:50%; font-size:11px; font-weight:800;
+  border:2px solid; flex-shrink:0;
+}
+.roi-s { background:rgba(0,200,150,0.1); border-color:var(--accent-org); color:var(--accent-org); }
+.roi-a { background:rgba(79,142,247,0.1); border-color:var(--accent-pa); color:var(--accent-pa); }
+.roi-b { background:rgba(245,166,35,0.1); border-color:var(--accent-warn); color:var(--accent-warn); }
+.roi-c { background:rgba(242,95,92,0.1); border-color:var(--accent-red); color:var(--accent-red); }
+.roi-na { background:rgba(100,100,130,0.1); border-color:var(--text-dim); color:var(--text-dim); }
+
+/* mini funnel bar */
+.mini-funnel { display:flex; gap:2px; align-items:flex-end; height:20px; margin-top:2px; }
+.mf-bar { width:8px; border-radius:2px 2px 0 0; min-height:2px; }
+
+/* ── DIAGNOSIS ── */
+.flags-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-bottom:20px; }
+.flag-card {
+  background:var(--surface); border-radius:10px; border:1px solid var(--border);
+  padding:12px 14px; display:flex; gap:10px; align-items:flex-start;
+}
+.flag-icon { font-size:20px; flex-shrink:0; }
+.flag-card h4 { font-size:11px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.flag-card p { font-size:10px; color:var(--text-muted); line-height:1.4; }
+.flag-card.good { border-color:rgba(0,200,150,0.3); background:rgba(0,200,150,0.04); }
+.flag-card.warn { border-color:rgba(245,166,35,0.3); background:rgba(245,166,35,0.04); }
+.flag-card.bad { border-color:rgba(242,95,92,0.3); background:rgba(242,95,92,0.04); }
+.flag-card.info { border-color:rgba(79,142,247,0.3); background:rgba(79,142,247,0.04); }
+
+/* ── SEGMENTATION ── */
+.bucket-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.bucket-card {
+  background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:16px;
+}
+.bucket-card .b-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.bucket-card .b-emoji { font-size:20px; }
+.bucket-card h4 { font-size:12px; font-weight:700; color:var(--text); }
+.bucket-card .b-sub { font-size:10px; color:var(--text-muted); }
+.bucket-card .b-count { font-size:28px; font-weight:800; margin-bottom:4px; }
+.bucket-card .creator-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+.creator-chip { padding:2px 8px; border-radius:10px; background:var(--surface2); font-size:10px; color:var(--text-muted); border:1px solid var(--border); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:800px) {
+  .compare-3, .chart-row { grid-template-columns:1fr; }
+  .stat-row { grid-template-columns:1fr 1fr; }
+  .bucket-grid { grid-template-columns:1fr; }
+  .funnel-visual { flex-direction:column; }
+  .funnel-stage:not(:last-child)::after { content:'▼'; right:auto; left:50%; top:auto; bottom:-12px; transform:translateX(-50%); }
+  .funnel-stage:first-child { border-radius:10px 10px 0 0; }
+  .funnel-stage:last-child { border-radius:0 0 10px 10px; }
+  header { flex-direction:column; gap:8px; align-items:flex-start; }
+  .section { padding:16px; }
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div style="display:flex; align-items:center; gap:10px;">
+  <div class="logo">
     <div class="logo-icon">📺</div>
     <div>
-      <h1 style="font-size:16px;">StoryTV · Performance Dashboard</h1>
-      <span style="font-size:10px; color:var(--text-muted);">Live Tracker Analytics</span>
+      <h1>StoryTV · Creator CPX Dashboard</h1>
+      <span>Meta Partnership Ads · Organic · Blended ROI</span>
     </div>
   </div>
-  <span id="sync-status" style="font-size:11px; color:var(--accent-org);">● Ready</span>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <span id="last-updated">Fetching…</span>
+  </div>
 </header>
 
-<div id="loading" style="text-align:center; padding: 100px;">
-  <p>Fetching data from published tracker...</p>
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Fetching live data from StoryTV Exec Tracker…</p>
+</div>
+
+<div id="error-box">
+  <h2>⚠️ Could not load data</h2>
+  <p id="error-detail">Make sure the Google Sheet is shared publicly (Anyone with link → Viewer).</p>
+  <button onclick="location.reload()">Retry</button>
 </div>
 
 <div id="app">
-  <div class="compare-3">
-    <div class="ccard">
-      <h3 style="color:var(--accent-org); margin-bottom:10px;">Organic Trials</h3>
-      <h2 id="o-trials-val">0</h2>
+  <nav>
+    <button class="active" data-sec="exec" onclick="showSec('exec',this)">📊 Executive Summary</button>
+    <button data-sec="funnel" onclick="showSec('funnel',this)">🔽 Funnel Analysis</button>
+    <button data-sec="leaderboard" onclick="showSec('leaderboard',this)">🏆 Creator Leaderboard</button>
+    <button data-sec="diagnosis" onclick="showSec('diagnosis',this)">🩺 Diagnosis</button>
+    <button data-sec="segmentation" onclick="showSec('segmentation',this)">🎯 Segmentation</button>
+  </nav>
+
+  <!-- ═══ EXECUTIVE SUMMARY ═══ -->
+  <div id="sec-exec" class="section active">
+    <div class="sec-header">
+      <div><div class="sec-title">Executive Summary</div><div class="sec-subtitle">All numbers from live Google Sheet · CPX = Cost per event</div></div>
     </div>
-    <div class="ccard">
-      <h3 style="color:var(--accent-pa); margin-bottom:10px;">Meta PA Trials</h3>
-      <h2 id="p-trials-val">0</h2>
+
+    <!-- 3-col compare -->
+    <div class="compare-3">
+      <div class="ccard">
+        <div class="ccard-head"><div class="dot org"></div><h3 class="org">🌱 ORGANIC</h3></div>
+        <div class="ccard-row"><span class="lbl">Views / Impressions</span><span class="val" id="o-views">—</span></div>
+        <div class="ccard-row"><span class="lbl">Clicks</span><span class="val" id="o-clicks">—</span></div>
+        <div class="ccard-row"><span class="lbl">Installs</span><span class="val" id="o-installs">—</span></div>
+        <div class="ccard-row"><span class="lbl">Trials</span><span class="val" id="o-trials">—</span></div>
+        <div class="ccard-row"><span class="lbl">Content Spend</span><span class="val" id="o-spend">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP Click</span><span class="val" id="o-cpc">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="o-cpi">—</span></div>
+        <div class="ccard-row highlight org"><span class="lbl">CP Trial</span><span class="val" id="o-cpt">—</span></div>
+      </div>
+      <div class="ccard">
+        <div class="ccard-head"><div class="dot pa"></div><h3 class="pa">📣 META PA</h3></div>
+        <div class="ccard-row"><span class="lbl">Impressions</span><span class="val" id="p-impr">—</span></div>
+        <div class="ccard-row"><span class="lbl">Link Clicks</span><span class="val" id="p-clicks">—</span></div>
+        <div class="ccard-row"><span class="lbl">Installs</span><span class="val" id="p-installs">—</span></div>
+        <div class="ccard-row"><span class="lbl">Trials (Purchases)</span><span class="val" id="p-trials">—</span></div>
+        <div class="ccard-row"><span class="lbl">Ad Spend</span><span class="val" id="p-spend">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP 1000 Impressions</span><span class="val" id="p-cpm">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="p-cpi">—</span></div>
+        <div class="ccard-row highlight pa"><span class="lbl">CP Trial</span><span class="val" id="p-cpt">—</span></div>
+      </div>
+      <div class="ccard">
+        <div class="ccard-head"><div class="dot blend"></div><h3 class="blend">🔀 BLENDED</h3></div>
+        <div class="ccard-row"><span class="lbl">Total Views + Impressions</span><span class="val" id="b-views">—</span></div>
+        <div class="ccard-row"><span class="lbl">Total Clicks</span><span class="val" id="b-clicks">—</span></div>
+        <div class="ccard-row"><span class="lbl">Total Installs</span><span class="val" id="b-installs">—</span></div>
+        <div class="ccard-row"><span class="lbl">Total Trials</span><span class="val" id="b-trials">—</span></div>
+        <div class="ccard-row"><span class="lbl">Total Spend</span><span class="val" id="b-spend">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP Click</span><span class="val" id="b-cpc">—</span></div>
+        <div class="ccard-row"><span class="lbl">CP Install</span><span class="val" id="b-cpi">—</span></div>
+        <div class="ccard-row highlight blend"><span class="lbl">CP Trial</span><span class="val" id="b-cpt">—</span></div>
+      </div>
     </div>
-    <div class="ccard">
-      <h3 style="color:var(--accent-blend); margin-bottom:10px;">Blended CPT</h3>
-      <h2 id="b-cpt-val">₹0</h2>
+
+    <div class="chart-row">
+      <div class="chart-panel">
+        <h3>Trial Share — Organic vs Meta PA</h3>
+        <p class="chart-sub">Contribution to total trials</p>
+        <div style="height:200px"><canvas id="trialDonut"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <h3>Spend Efficiency — CPTrial Comparison</h3>
+        <p class="chart-sub">Lower is better · ₹ per Trial</p>
+        <div style="height:200px"><canvas id="cptCompare"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-panel full">
+      <h3>Top 15 Creators by Total Trials (Organic + PA)</h3>
+      <p class="chart-sub">Stacked: green = organic, blue = Meta PA</p>
+      <div style="height:240px"><canvas id="topCreators"></canvas></div>
     </div>
   </div>
 
-  <div class="chart-panel">
-    <canvas id="performanceChart"></canvas>
+  <!-- ═══ FUNNEL ═══ -->
+  <div id="sec-funnel" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">Funnel Analysis</div><div class="sec-subtitle">Stage-by-stage volume, conversion rates and cost</div></div>
+      <div class="source-pills">
+        <button id="fp-org" class="pill-org" onclick="setFunnelSrc('org')">Organic</button>
+        <button id="fp-pa" onclick="setFunnelSrc('pa')">Meta PA</button>
+        <button id="fp-blend" onclick="setFunnelSrc('blend')">Blended</button>
+      </div>
+    </div>
+    <div class="funnel-visual" id="funnelVis"></div>
+    <div class="chart-row">
+      <div class="chart-panel">
+        <h3>Funnel Volume (log scale)</h3>
+        <div style="height:220px"><canvas id="funnelVol"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <h3>CPX by Stage (₹ per event)</h3>
+        <div style="height:220px"><canvas id="funnelCpx"></canvas></div>
+      </div>
+    </div>
   </div>
 
-  <div class="ccard" style="margin-top:20px;">
-    <h3>Top Performing Creators</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Creator</th>
-          <th>Type</th>
-          <th>Total Trials</th>
-          <th>Efficiency</th>
-        </tr>
-      </thead>
-      <tbody id="leaderboard-body"></tbody>
-    </table>
+  <!-- ═══ LEADERBOARD ═══ -->
+  <div id="sec-leaderboard" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">Creator Leaderboard</div><div class="sec-subtitle">Full funnel health + ROI Score per creator</div></div>
+    </div>
+    <div class="lb-controls">
+      <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">Sort:</span>
+      <button class="sort-btn active" onclick="sortLB('blend_trials',this)">Total Trials ↓</button>
+      <button class="sort-btn" onclick="sortLB('blend_cpt',this)">CP Trial ↑</button>
+      <button class="sort-btn" onclick="sortLB('roi_score',this)">ROI Score ↓</button>
+      <button class="sort-btn" onclick="sortLB('pa_spend',this)">PA Spend ↓</button>
+      <input class="filter-input" id="lb-search" placeholder="🔍  Search creator…" oninput="renderLB()"/>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Creator</th>
+            <th>Type</th>
+            <th title="ROI Score blending CPTrial efficiency, trial volume and funnel conversion">ROI Score</th>
+            <th title="Organic: content cost / trials">Org CPTrial</th>
+            <th title="Meta PA: ad spend / trials">PA CPTrial</th>
+            <th title="Combined spend / combined trials">Blend CPTrial</th>
+            <th>Org Views</th>
+            <th>Org Clicks</th>
+            <th>Org Installs</th>
+            <th>Org Trials</th>
+            <th>PA Spend (₹)</th>
+            <th>PA Impressions</th>
+            <th>PA Link Clicks</th>
+            <th>PA Installs</th>
+            <th>PA Trials</th>
+            <th>Total Trials</th>
+            <th>Total Spend (₹)</th>
+            <th>Funnel</th>
+          </tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+    </div>
   </div>
-</div>
+
+  <!-- ═══ DIAGNOSIS ═══ -->
+  <div id="sec-diagnosis" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">Diagnosis</div><div class="sec-subtitle">Automated insight flags · CPX cross-plots</div></div>
+    </div>
+    <div class="flags-grid" id="flags-grid"></div>
+    <div class="chart-row">
+      <div class="chart-panel">
+        <h3>PA CPClick vs CPTrial (bubble = trial volume)</h3>
+        <p class="chart-sub">Low CPClick + Low CPTrial → top right = efficient</p>
+        <div style="height:260px"><canvas id="scatter1"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <h3>PA Spend vs CPTrial</h3>
+        <p class="chart-sub">Ideal zone: high spend, low CPTrial</p>
+        <div style="height:260px"><canvas id="scatter2"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-panel full">
+      <h3>Organic Click→Install→Trial Conversion by Creator (top 20)</h3>
+      <div style="height:220px"><canvas id="orgConvChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ═══ SEGMENTATION ═══ -->
+  <div id="sec-segmentation" class="section">
+    <div class="sec-header">
+      <div><div class="sec-title">Segmentation</div><div class="sec-subtitle">Creator buckets · Type breakdown · Scale decisions</div></div>
+    </div>
+    <div class="bucket-grid" id="bucket-grid"></div>
+    <div class="chart-row">
+      <div class="chart-panel">
+        <h3>Creator Type — Blended CPTrial (₹)</h3>
+        <div style="height:200px"><canvas id="typeCpt"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <h3>Creator Type — Total Trials</h3>
+        <div style="height:200px"><canvas id="typeTrials"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
 
 <script>
-// 1. The Link
-const PUBLISHED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGQ1U2rmf9M0BODebWeLV-1bxQOETA3i6DE54EqMkr73MyguQaSFO4P1UnIf0-elB6VWwK83fe2c6Q/pub?gid=0&single=true&output=csv';
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const SHEET_ID  = '17ad72UZB_x8oTVVjJmE0nr015SjA1OzUmWxU63sU7TQ';
+// These GIDs come from the sheet URL — we try the main export first, fallback to CSV
+// The sheet may require "share with anyone" to use CSV export
+const CSV_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+// For when the sheet is published: https://docs.google.com/spreadsheets/d/ID/pub?output=csv
+const PUB_URL   = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
 
-// 2. Global State
+// ─── GLOBALS ─────────────────────────────────────────────────────────────────
 let CREATORS = [];
-let TOTALS = {};
-let CHARTS = {};
+let TOTALS   = {};
+let CHARTS   = {};
+let fSrc     = 'org';
+let lbSort   = 'blend_trials';
+// Benchmark CPTrial (industry/target)
 const BENCH_CPT = 500;
 
-// 3. Helper: Clean numbers from strings (handles ₹, %, commas)
-const cn = s => {
-    if (s === undefined || s === null || s === '') return 0;
-    const n = parseFloat(String(s).replace(/[₹,%\s]/g, ''));
-    return isNaN(n) ? 0 : n;
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+const rupee = n => {
+  if (n == null || isNaN(n)) return '—';
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+};
+const num = n => {
+  if (n == null || isNaN(n) || n === 0) return '—';
+  return Math.round(n).toLocaleString('en-IN');
+};
+const pct = n => n > 0 ? (n * 100).toFixed(1) + '%' : '—';
+const cpr = (spend, count) => count > 0 ? rupee(spend / count) : '—';
+const z = v => v === 0 ? '<span class="zero">—</span>' : String(Math.round(v).toLocaleString('en-IN'));
+const zr = (s, c) => c > 0 ? rupee(s / c) : '<span class="zero">—</span>';
+
+// ─── ROI SCORE ───────────────────────────────────────────────────────────────
+function roiScore(r) {
+  // Scores 0–100 blending:
+  //   40% CPTrial efficiency vs benchmark
+  //   30% trial volume (log-normalized across dataset)
+  //   20% funnel conversion (click→trial)
+  //   10% PA amplification leverage
+  const blendSpend  = r.content_cost + r.pa_spend;
+  const blendTrials = r.org_trials + r.pa_trials;
+
+  if (blendTrials === 0) return null; // no conversion data
+
+  // 1. CPTrial score (vs benchmark ₹500): 40pts
+  const cpt = blendSpend / blendTrials;
+  const cptScore = Math.min(40, Math.max(0, 40 * (BENCH_CPT / cpt)));
+
+  // 2. Trial volume score: 30pts — log scale, top creator gets 30
+  const maxT = Math.max(...CREATORS.map(c => c.org_trials + c.pa_trials));
+  const volScore = 30 * (Math.log1p(blendTrials) / Math.log1p(maxT));
+
+  // 3. Funnel conversion: clicks → trials (organic): 20pts
+  const clicks = r.org_clicks + r.pa_link_clicks;
+  const convRate = clicks > 0 ? blendTrials / clicks : 0;
+  const convScore = Math.min(20, convRate * 20 * 100); // 1% click→trial = full 20
+
+  // 4. PA leverage: does PA amplify with good CPTrial? 10pts
+  let paLev = 0;
+  if (r.pa_trials > 0 && r.pa_spend > 0) {
+    const paCPT = r.pa_spend / r.pa_trials;
+    paLev = Math.min(10, 10 * (BENCH_CPT / paCPT));
+  }
+
+  const total = Math.round(cptScore + volScore + convScore + paLev);
+  return Math.min(100, Math.max(0, total));
+}
+
+function roiGrade(score) {
+  if (score == null) return { grade: '—', cls: 'roi-na' };
+  if (score >= 70) return { grade: 'S', cls: 'roi-s' };
+  if (score >= 50) return { grade: 'A', cls: 'roi-a' };
+  if (score >= 30) return { grade: 'B', cls: 'roi-b' };
+  return { grade: 'C', cls: 'roi-c' };
+}
+
+// ─── PARSE SHEET DATA ────────────────────────────────────────────────────────
+function parseCSV(raw) {
+  // Parse raw CSV into rows of arrays
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const cleaned = [];
+  for (const l of lines) {
+    // simple CSV split (handles quoted commas)
+    const row = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < l.length; i++) {
+      const ch = l[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    row.push(cur.trim());
+    cleaned.push(row);
+  }
+  return cleaned;
+}
+
+function cn(s) {
+  if (!s) return 0;
+  s = String(s).replace(/₹/g,'').replace(/,/g,'').replace(/\\/g,'').trim();
+  if (!s || s === '-' || s.toLowerCase() === 'live' || s.toLowerCase() === 'paused') return 0;
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function findCreatorTable(rows) {
+  // Find the row index where the creator table header starts
+  // Header contains "Influencer ID", "Username", "Organic" columns and "PA" columns
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const joined = r.join('|').toLowerCase();
+    if (joined.includes('influencer id') && joined.includes('username') && (joined.includes('organic') || joined.includes('clicks'))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function parseCreators(rows) {
+  const hdrIdx = findCreatorTable(rows);
+  if (hdrIdx < 0) return [];
+
+  const hdr = rows[hdrIdx].map(h => h.toLowerCase().trim());
+
+  // Map column indices dynamically
+  const col = name => hdr.findIndex(h => h.includes(name));
+
+  // Try to find columns by content keywords
+  // Based on what we know from markdown analysis:
+  // cols: ID, Username, URL, Type, Followers, Views, Status, ContentCost, ConvCost, TotalCost,
+  //       Reel1, Date, Clicks, Installs, Registrations, Acquisitions, Subscription,
+  //       PA_Spend, PA_Impressions, PA_VideoViews, PA_LinkClicks, PA_Installs, PA_Purchases
+  const creators = [];
+  for (let i = hdrIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0] || isNaN(parseInt(r[0]))) continue;
+    const id = parseInt(r[0]);
+    if (!id) continue;
+
+    const safe = idx => r[idx] !== undefined ? r[idx] : '';
+
+    creators.push({
+      id,
+      username: safe(1).replace(/\\/g,'').replace(/^@/,''),
+      url: safe(2),
+      type: safe(3),
+      followers: cn(safe(4)),
+      views: cn(safe(5)),
+      content_cost: cn(safe(7)),
+      org_clicks: cn(safe(12)),
+      org_installs: cn(safe(13)),
+      org_trials: cn(safe(15)),
+      pa_spend: cn(safe(17)),
+      pa_impressions: cn(safe(18)),
+      pa_video_views: cn(safe(19)),
+      pa_link_clicks: cn(safe(20)),
+      pa_installs: cn(safe(21)),
+      pa_trials: cn(safe(22)),
+    });
+  }
+  return creators;
+}
+
+function computeTotals(creators) {
+  const sum = key => creators.reduce((s,r) => s + (r[key]||0), 0);
+  return {
+    org_views:      sum('views'),
+    org_clicks:     sum('org_clicks'),
+    org_installs:   sum('org_installs'),
+    org_trials:     sum('org_trials'),
+    org_cost:       sum('content_cost'),
+    pa_spend:       sum('pa_spend'),
+    pa_impressions: sum('pa_impressions'),
+    pa_link_clicks: sum('pa_link_clicks'),
+    pa_installs:    sum('pa_installs'),
+    pa_trials:      sum('pa_trials'),
+  };
+}
+
+// ─── FETCH DATA ───────────────────────────────────────────────────────────────
+async function fetchData() {
+  // Try CSV export first (requires sheet shared as viewer)
+  const urls = [CSV_URL, PUB_URL];
+  let raw = null, lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      raw = await res.text();
+      if (raw && raw.length > 500) break;
+    } catch(e) { lastErr = e; }
+  }
+  if (!raw || raw.length < 500) throw new Error(lastErr ? lastErr.message : 'Empty response');
+  return raw;
+}
+
+// ─── RENDER EXEC ─────────────────────────────────────────────────────────────
+function renderExec() {
+  const t = TOTALS;
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('o-views',    num(t.org_views));
+  set('o-clicks',   num(t.org_clicks));
+  set('o-installs', num(t.org_installs));
+  set('o-trials',   num(t.org_trials));
+  set('o-spend',    rupee(t.org_cost));
+  set('o-cpc',      cpr(t.org_cost, t.org_clicks));
+  set('o-cpi',      cpr(t.org_cost, t.org_installs));
+  set('o-cpt',      cpr(t.org_cost, t.org_trials));
+  set('p-impr',     num(t.pa_impressions));
+  set('p-clicks',   num(t.pa_link_clicks));
+  set('p-installs', num(t.pa_installs));
+  set('p-trials',   num(t.pa_trials));
+  set('p-spend',    rupee(t.pa_spend));
+  set('p-cpm',      t.pa_impressions > 0 ? rupee(t.pa_spend * 1000 / t.pa_impressions) : '—');
+  set('p-cpi',      cpr(t.pa_spend, t.pa_installs));
+  set('p-cpt',      cpr(t.pa_spend, t.pa_trials));
+  const bV = t.org_views + t.pa_impressions;
+  const bC = t.org_clicks + t.pa_link_clicks;
+  const bI = t.org_installs + t.pa_installs;
+  const bT = t.org_trials + t.pa_trials;
+  const bS = t.org_cost + t.pa_spend;
+  set('b-views',    num(bV));
+  set('b-clicks',   num(bC));
+  set('b-installs', num(bI));
+  set('b-trials',   num(bT));
+  set('b-spend',    rupee(bS));
+  set('b-cpc',      cpr(bS, bC));
+  set('b-cpi',      cpr(bS, bI));
+  set('b-cpt',      cpr(bS, bT));
+
+  mkChart('trialDonut', 'doughnut', {
+    labels: ['Organic Trials', 'Meta PA Trials'],
+    datasets: [{ data:[t.org_trials, t.pa_trials], backgroundColor:['#00c896','#4f8ef7'], borderWidth:0, hoverOffset:4 }]
+  }, { plugins:{ legend:{ position:'right', labels:{ color:'#7b7fa8', font:{size:11} } } } });
+
+  const orgCPT  = t.org_trials  > 0 ? t.org_cost  / t.org_trials  : 0;
+  const paCPT   = t.pa_trials   > 0 ? t.pa_spend  / t.pa_trials   : 0;
+  const blendCPT= bT            > 0 ? bS          / bT            : 0;
+  mkChart('cptCompare', 'bar', {
+    labels: ['Organic CPTrial', 'Meta PA CPTrial', 'Blended CPTrial'],
+    datasets: [{
+      data:[Math.round(orgCPT), Math.round(paCPT), Math.round(blendCPT)],
+      backgroundColor:['rgba(0,200,150,0.3)','rgba(79,142,247,0.3)','rgba(181,108,251,0.3)'],
+      borderColor:['#00c896','#4f8ef7','#b56cfb'],
+      borderWidth:2, borderRadius:6,
+    }]
+  }, {
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ' ₹' + c.raw.toLocaleString('en-IN') } } },
+    scales:{ y:{ ticks:{ color:'#7b7fa8', callback: v => '₹'+v }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
+  });
+
+  const top15 = [...CREATORS].map(r => ({
+    name: '@'+r.username, org: r.org_trials, pa: r.pa_trials, tot: r.org_trials+r.pa_trials
+  })).sort((a,b)=>b.tot-a.tot).slice(0,15);
+  mkChart('topCreators','bar', {
+    labels: top15.map(r=>r.name),
+    datasets:[
+      { label:'Organic', data:top15.map(r=>r.org), backgroundColor:'rgba(0,200,150,0.7)', stack:'s' },
+      { label:'Meta PA', data:top15.map(r=>r.pa),  backgroundColor:'rgba(79,142,247,0.7)', stack:'s' },
+    ]
+  }, {
+    plugins:{ legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
+    scales:{ x:{ stacked:true, ticks:{ color:'#7b7fa8', font:{size:9} }, grid:{display:false} }, y:{ stacked:true, ticks:{ color:'#7b7fa8' }, grid:{ color:'rgba(255,255,255,0.05)' } } }
+  });
+}
+
+// ─── FUNNEL ───────────────────────────────────────────────────────────────────
+function getFD(src) {
+  const t = TOTALS;
+  if (src === 'org') return {
+    stages:  [{ icon:'👁', lbl:'Views',    vol:t.org_views,    cpx: t.org_clicks   > 0 ? t.org_cost/t.org_views    : 0, conv:null },
+              { icon:'🖱', lbl:'Clicks',   vol:t.org_clicks,   cpx: t.org_installs > 0 ? t.org_cost/t.org_clicks   : 0, conv:t.org_views>0 ? t.org_clicks/t.org_views:0 },
+              { icon:'📥', lbl:'Installs', vol:t.org_installs, cpx: t.org_installs > 0 ? t.org_cost/t.org_installs : 0, conv:t.org_clicks>0 ? t.org_installs/t.org_clicks:0 },
+              { icon:'🧪', lbl:'Trials',   vol:t.org_trials,   cpx: t.org_trials   > 0 ? t.org_cost/t.org_trials   : 0, conv:t.org_installs>0 ? t.org_trials/t.org_installs:0 }],
+    color:'#00c896', spend:t.org_cost
+  };
+  if (src === 'pa') return {
+    stages:  [{ icon:'📺', lbl:'Impressions', vol:t.pa_impressions, cpx: t.pa_impressions>0 ? t.pa_spend/t.pa_impressions:0, conv:null },
+              { icon:'🔗', lbl:'Link Clicks', vol:t.pa_link_clicks, cpx: t.pa_link_clicks>0 ? t.pa_spend/t.pa_link_clicks:0, conv:t.pa_impressions>0 ? t.pa_link_clicks/t.pa_impressions:0 },
+              { icon:'📥', lbl:'Installs',    vol:t.pa_installs,    cpx: t.pa_installs>0    ? t.pa_spend/t.pa_installs:0,    conv:t.pa_link_clicks>0 ? t.pa_installs/t.pa_link_clicks:0 },
+              { icon:'🧪', lbl:'Trials',      vol:t.pa_trials,      cpx: t.pa_trials>0      ? t.pa_spend/t.pa_trials:0,      conv:t.pa_installs>0 ? t.pa_trials/t.pa_installs:0 }],
+    color:'#4f8ef7', spend:t.pa_spend
+  };
+  // blend
+  const bV=t.org_views+t.pa_impressions, bC=t.org_clicks+t.pa_link_clicks;
+  const bI=t.org_installs+t.pa_installs, bT=t.org_trials+t.pa_trials, bS=t.org_cost+t.pa_spend;
+  return {
+    stages:  [{ icon:'👁', lbl:'Views/Impr', vol:bV, cpx:bV>0?bS/bV:0, conv:null },
+              { icon:'🖱', lbl:'Clicks',      vol:bC, cpx:bC>0?bS/bC:0, conv:bV>0?bC/bV:0 },
+              { icon:'📥', lbl:'Installs',    vol:bI, cpx:bI>0?bS/bI:0, conv:bC>0?bI/bC:0 },
+              { icon:'🧪', lbl:'Trials',      vol:bT, cpx:bT>0?bS/bT:0, conv:bI>0?bT/bI:0 }],
+    color:'#b56cfb', spend:bS
+  };
+}
+
+function renderFunnel() {
+  const fd = getFD(fSrc);
+  const maxVol = Math.max(...fd.stages.map(s=>s.vol));
+  const vis = document.getElementById('funnelVis');
+  vis.innerHTML = fd.stages.map((s,i) => {
+    const fillPct = maxVol > 0 ? (s.vol / maxVol * 100) : 0;
+    return `<div class="funnel-stage" style="--stage-color:${fd.color}">
+      <div class="f-icon">${s.icon}</div>
+      <div class="f-label">${s.lbl}</div>
+      <div class="f-vol">${num(s.vol)}</div>
+      ${s.conv !== null ? `<div class="f-conv" style="color:${fd.color}">${pct(s.conv)}</div>` : '<div class="f-conv">—</div>'}
+      <div class="f-cpx">₹${s.cpx > 0 ? s.cpx.toFixed(2) : '—'}</div>
+      <div class="f-fill"></div>
+    </div>`;
+  }).join('');
+
+  ['org','pa','blend'].forEach(s => {
+    const btn = document.getElementById('fp-'+s);
+    btn.className = s === fSrc ? `pill-${s}` : '';
+  });
+
+  mkChart('funnelVol','bar', {
+    labels: fd.stages.map(s=>s.lbl),
+    datasets:[{ label:'Volume', data:fd.stages.map(s=>s.vol), backgroundColor:fd.color+'55', borderColor:fd.color, borderWidth:2, borderRadius:6 }]
+  },{
+    plugins:{ legend:{display:false} },
+    scales:{ y:{ type:'logarithmic', ticks:{ color:'#7b7fa8', callback:v=>num(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
+  });
+
+  mkChart('funnelCpx','line', {
+    labels: fd.stages.map(s=>s.lbl),
+    datasets:[{ label:'CPX (₹)', data:fd.stages.map(s=>s.cpx>0?s.cpx:null), borderColor:fd.color, backgroundColor:fd.color+'22', fill:true, tension:0.4, pointRadius:6, pointBackgroundColor:fd.color }]
+  },{
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ' ₹' + (c.raw||0).toFixed(2) } } },
+    scales:{ y:{ ticks:{ color:'#7b7fa8', callback:v=>'₹'+v.toFixed(0) }, grid:{ color:'rgba(255,255,255,0.05)' } }, x:{ ticks:{ color:'#7b7fa8' }, grid:{display:false} } }
+  });
+}
+
+window.setFunnelSrc = s => { fSrc = s; renderFunnel(); };
+
+// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
+function enrichCreators() {
+  return CREATORS.map(r => {
+    const blendSpend  = r.content_cost + r.pa_spend;
+    const blendTrials = r.org_trials + r.pa_trials;
+    const blendCPT    = blendTrials > 0 ? blendSpend / blendTrials : Infinity;
+    const orgCPT      = r.org_trials > 0 ? r.content_cost / r.org_trials : Infinity;
+    const paCPT       = r.pa_trials  > 0 ? r.pa_spend    / r.pa_trials  : Infinity;
+    const roi         = roiScore(r);
+    return { ...r, blendSpend, blendTrials, blendCPT, orgCPT, paCPT, roi_score: roi || 0 };
+  });
+}
+
+function renderLB() {
+  const q = (document.getElementById('lb-search').value||'').toLowerCase();
+  let rows = enrichCreators().filter(r => !q || r.username.toLowerCase().includes(q));
+
+  if (lbSort === 'blend_trials') rows.sort((a,b) => b.blendTrials - a.blendTrials);
+  else if (lbSort === 'blend_cpt') rows.sort((a,b) => {
+    if (a.blendTrials === 0) return 1; if (b.blendTrials === 0) return -1;
+    return a.blendCPT - b.blendCPT;
+  });
+  else if (lbSort === 'roi_score') rows.sort((a,b) => b.roi_score - a.roi_score);
+  else if (lbSort === 'pa_spend') rows.sort((a,b) => b.pa_spend - a.pa_spend);
+
+  const tbody = document.getElementById('lb-body');
+  tbody.innerHTML = rows.slice(0,80).map(r => {
+    const { grade, cls } = roiGrade(r.roi_score);
+    const orgCPTd = r.org_trials > 0 ? rupee(r.orgCPT) : '<span class="zero">—</span>';
+    const paCPTd  = r.pa_trials  > 0 ? rupee(r.paCPT)  : '<span class="zero">—</span>';
+    const blCPTd  = r.blendTrials > 0 ? rupee(r.blendCPT) : '<span class="zero">—</span>';
+
+    // Mini funnel bars: views→clicks→installs→trials (scaled to max click)
+    const maxBar = Math.max(r.org_clicks + r.pa_link_clicks, 1);
+    const bars = [
+      { h: Math.max(2, Math.round((r.org_clicks / (r.views||1)) * 16 * 100) / 100), c:'#00c896' },
+      { h: Math.max(2, Math.round(((r.org_installs+r.pa_installs) / Math.max(r.org_clicks+r.pa_link_clicks,1)) * 16 * 100)/100), c:'#4f8ef7' },
+      { h: Math.max(2, Math.round((r.blendTrials / Math.max(r.org_installs+r.pa_installs,1)) * 16 * 100)/100), c:'#b56cfb' },
+    ];
+    const miniFunnel = `<div class="mini-funnel">${bars.map(b=>`<div class="mf-bar" style="height:${Math.min(b.h,20)}px;background:${b.c}"></div>`).join('')}</div>`;
+
+    const typeCls = r.type.replace(' ','_').toLowerCase() || 'nano';
+    return `<tr>
+      <td><div class="creator-cell"><span class="creator-name">@${r.username}</span><span class="creator-handle">ID ${r.id}</span></div></td>
+      <td><span class="type-badge ${typeCls}">${r.type||'—'}</span></td>
+      <td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><div class="roi-score ${cls}">${grade}</div><span style="font-size:10px;color:var(--text-muted)">${r.roi_score||'—'}</span></div></td>
+      <td>${orgCPTd}</td>
+      <td>${paCPTd}</td>
+      <td>${blCPTd}</td>
+      <td>${z(r.views)}</td>
+      <td>${z(r.org_clicks)}</td>
+      <td>${z(r.org_installs)}</td>
+      <td>${z(r.org_trials)}</td>
+      <td>${r.pa_spend > 0 ? rupee(r.pa_spend) : '<span class="zero">—</span>'}</td>
+      <td>${z(r.pa_impressions)}</td>
+      <td>${z(r.pa_link_clicks)}</td>
+      <td>${z(r.pa_installs)}</td>
+      <td>${z(r.pa_trials)}</td>
+      <td><strong>${z(r.blendTrials)}</strong></td>
+      <td>${r.blendSpend > 0 ? rupee(r.blendSpend) : '<span class="zero">—</span>'}</td>
+      <td>${miniFunnel}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.sortLB = (key, btn) => {
+  lbSort = key;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLB();
 };
 
-// 4. The Main Engine
-async function init() {
-    console.log("🚀 Dashboard initializing...");
-    const loadingEl = document.getElementById('loading');
-    const appEl = document.getElementById('app');
+// ─── DIAGNOSIS ────────────────────────────────────────────────────────────────
+function renderDiagnosis() {
+  const t = TOTALS;
+  const flags = [];
 
-    try {
-        const response = await fetch(`${PUBLISHED_CSV_URL}&t=${Date.now()}`);
-        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
-        
-        const csvText = await response.text();
-        console.log("📥 CSV Data Received. Length:", csvText.length);
+  const orgCPT = t.org_trials > 0 ? t.org_cost / t.org_trials : null;
+  const paCPT  = t.pa_trials  > 0 ? t.pa_spend / t.pa_trials  : null;
 
-        // Split rows and handle potential empty lines
-        const allRows = csvText.split(/\r?\n/).map(line => 
-            line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(item => item.trim().replace(/^"|"$/g, ''))
-        ).filter(row => row.length > 1);
+  if (orgCPT && paCPT) {
+    if (paCPT < orgCPT * 0.7)
+      flags.push({ cls:'good', icon:'🚀', title:'Meta PA is outperforming Organic', text:`PA CPTrial (${rupee(paCPT)}) is ${Math.round((1-paCPT/orgCPT)*100)}% cheaper than Organic (${rupee(orgCPT)}). Allocate more budget to PA.` });
+    else if (paCPT > orgCPT * 1.3)
+      flags.push({ cls:'warn', icon:'⚠️', title:'PA CPTrial above Organic', text:`PA CPTrial (${rupee(paCPT)}) is ${Math.round((paCPT/orgCPT-1)*100)}% higher than Organic (${rupee(orgCPT)}). Review ad creative and targeting.` });
+    else
+      flags.push({ cls:'info', icon:'📊', title:'PA and Organic CPTrial are comparable', text:`Organic ${rupee(orgCPT)} · PA ${rupee(paCPT)}. Both channels are similarly efficient.` });
+  }
 
-        // Find the Header Row (Look for 'Influencer' or 'Username')
-        const headerRowIdx = allRows.findIndex(row => 
-            row.join(' ').toLowerCase().includes('influencer') || 
-            row.join(' ').toLowerCase().includes('username')
-        );
+  const paC2I = t.pa_link_clicks > 0 ? t.pa_installs / t.pa_link_clicks : 0;
+  if (paC2I < 0.02)
+    flags.push({ cls:'bad', icon:'📉', title:'Low PA click → install rate', text:`Only ${pct(paC2I)} of PA link clicks become installs. App store page or redirect may need optimisation.` });
+  else
+    flags.push({ cls:'good', icon:'✅', title:'Healthy PA click → install', text:`${pct(paC2I)} of PA link clicks convert to installs. Funnel top is healthy.` });
 
-        if (headerRowIdx === -1) throw new Error("Could not find header row in Google Sheet.");
+  const paI2T = t.pa_installs > 0 ? t.pa_trials / t.pa_installs : 0;
+  if (paI2T < 0.1)
+    flags.push({ cls:'bad', icon:'🚨', title:'PA install → trial drop-off', text:`Only ${pct(paI2T)} of PA installs convert to trials. Onboarding or trial prompt may be broken.` });
+  else if (paI2T >= 0.15)
+    flags.push({ cls:'good', icon:'💎', title:'Strong PA install → trial conversion', text:`${pct(paI2T)} of PA installs become trials. Intent quality is high from Meta PA audience.` });
 
-        const header = allRows[headerRowIdx].map(h => h.toLowerCase().trim());
-        const dataRows = allRows.slice(headerRowIdx + 1);
+  const orgI2T = t.org_installs > 0 ? t.org_trials / t.org_installs : 0;
+  flags.push({ cls: orgI2T >= 0.1 ? 'good' : 'warn', icon: orgI2T >= 0.1 ? '🌱' : '⚠️',
+    title: `Organic install → trial: ${pct(orgI2T)}`,
+    text: `${num(t.org_installs)} installs → ${num(t.org_trials)} trials organically. ${orgI2T >= 0.1 ? 'Good conversion.' : 'Below 10% — review trial onboarding flow.'}` });
 
-        console.log("📋 Found Headers:", header);
+  // Best PA creator
+  const topPA = CREATORS.filter(r=>r.pa_trials>0).sort((a,b)=>(a.pa_spend/a.pa_trials)-(b.pa_spend/b.pa_trials))[0];
+  if (topPA) flags.push({ cls:'good', icon:'🏆', title:`Best PA CPTrial: @${topPA.username}`, text:`PA CPTrial of ${rupee(topPA.pa_spend/topPA.pa_trials)} with ${topPA.pa_trials} trials. Scale this creator's PA budget.` });
 
-        // Column Mapping Helper
-        const getIdx = (keywords) => {
-            const index = header.findIndex(h => keywords.some(k => h.includes(k)));
-            return index === -1 ? null : index;
-        };
+  const grid = document.getElementById('flags-grid');
+  grid.innerHTML = flags.map(f => `<div class="flag-card ${f.cls}"><div class="flag-icon">${f.icon}</div><div><h4>${f.title}</h4><p>${f.text}</p></div></div>`).join('');
 
-        const idx = {
-            user: getIdx(['username', 'influencer']),
-            type: getIdx(['type', 'category']),
-            oTrials: getIdx(['acquisitions', 'registrations', 'trials']),
-            paTrials: getIdx(['pa_trials', 'pa_purchases', 'purchases']),
-            oCost: getIdx(['content cost', 'fee', 'base cost']),
-            paCost: getIdx(['pa_spend', 'ad spend', 'spend'])
-        };
-
-        console.log("📍 Column Mapping:", idx);
-
-        // Parse Creator Data
-        CREATORS = dataRows.filter(r => r[idx.user]).map((r, i) => {
-            const oT = cn(r[idx.oTrials]);
-            const pT = cn(r[idx.paTrials]);
-            const oC = cn(r[idx.oCost]);
-            const pC = cn(r[idx.paCost]);
-
-            return {
-                user: r[idx.user].replace(/^@/, ''),
-                type: r[idx.type] || 'Nano',
-                oTrials: oT,
-                paTrials: pT,
-                totalTrials: oT + pT,
-                oCost: oC,
-                paCost: pC,
-                totalCost: oC + pC
-            };
-        });
-
-        if (CREATORS.length === 0) throw new Error("Parsed 0 creators. Check column names.");
-
-        // Calculate Totals
-        TOTALS = CREATORS.reduce((acc, c) => ({
-            oT: acc.oT + c.oTrials,
-            pT: acc.pT + c.paTrials,
-            totalCost: acc.totalCost + c.totalCost
-        }), { oT: 0, pT: 0, totalCost: 0 });
-
-        console.log("📊 Totals Calculated:", TOTALS);
-
-        // Final Render
-        renderDashboard();
-        
-        loadingEl.style.display = 'none';
-        appEl.style.display = 'block';
-
-    } catch (err) {
-        console.error("❌ Critical Error:", err);
-        loadingEl.innerHTML = `<div style="color:#ff4d4d; background:#2a1a1a; padding:20px; border-radius:8px; border:1px solid #4a2a2a;">
-            <h3>Dashboard Error</h3>
-            <p>${err.message}</p>
-            <button onclick="location.reload()" style="margin-top:10px; cursor:pointer;">Retry</button>
-        </div>`;
+  // Scatter 1: PA CPClick vs CPTrial
+  const sc1 = CREATORS.filter(r=>r.pa_trials>0 && r.pa_link_clicks>0).map(r=>({
+    x: parseFloat((r.pa_spend/r.pa_link_clicks).toFixed(2)),
+    y: parseFloat((r.pa_spend/r.pa_trials).toFixed(2)),
+    r: Math.max(4, Math.min(22, r.pa_trials * 1.5)),
+    label: r.username, trials: r.pa_trials
+  }));
+  mkChart('scatter1','bubble',{ datasets:[{ label:'Creator', data:sc1, backgroundColor:'rgba(79,142,247,0.5)', borderColor:'#4f8ef7', borderWidth:1 }] },{
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=>`@${c.raw.label} · CPClick:₹${c.raw.x} · CPTrial:₹${c.raw.y} · ${Math.round(c.raw.r/1.5)} trials` } } },
+    scales:{
+      x:{ title:{display:true,text:'CP Link Click (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} },
+      y:{ title:{display:true,text:'CP Trial (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} }
     }
+  });
+
+  // Scatter 2: PA Spend vs CPTrial
+  const sc2 = CREATORS.filter(r=>r.pa_trials>0).map(r=>({
+    x: r.pa_spend, y: parseFloat((r.pa_spend/r.pa_trials).toFixed(2)), label:r.username
+  }));
+  mkChart('scatter2','scatter',{ datasets:[{ label:'Creator', data:sc2, backgroundColor:'rgba(181,108,251,0.5)', borderColor:'#b56cfb', pointRadius:7 }] },{
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=>`@${c.raw.label} · Spend:${rupee(c.raw.x)} · CPTrial:${rupee(c.raw.y)}` } } },
+    scales:{
+      x:{ title:{display:true,text:'PA Spend (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>rupee(v)}, grid:{color:'rgba(255,255,255,0.05)'} },
+      y:{ title:{display:true,text:'CP Trial (₹)',color:'#7b7fa8'}, ticks:{color:'#7b7fa8',callback:v=>'₹'+v}, grid:{color:'rgba(255,255,255,0.05)'} }
+    }
+  });
+
+  // Organic funnel conv chart
+  const topOrg = CREATORS.filter(r=>r.org_clicks>0).sort((a,b)=>b.org_clicks-a.org_clicks).slice(0,20);
+  mkChart('orgConvChart','bar',{
+    labels: topOrg.map(r=>'@'+r.username),
+    datasets:[
+      { label:'Click→Install %', data:topOrg.map(r=>r.org_clicks>0?+(r.org_installs/r.org_clicks*100).toFixed(1):0), backgroundColor:'rgba(0,200,150,0.6)', yAxisID:'y' },
+      { label:'Install→Trial %', data:topOrg.map(r=>r.org_installs>0?+(r.org_trials/r.org_installs*100).toFixed(1):0), backgroundColor:'rgba(79,142,247,0.6)', yAxisID:'y' },
+    ]
+  },{
+    plugins:{ legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
+    scales:{
+      x:{ ticks:{color:'#7b7fa8',font:{size:9}}, grid:{display:false} },
+      y:{ ticks:{color:'#7b7fa8',callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.05)'} }
+    }
+  });
 }
 
-function renderDashboard() {
-    // Update UI Cards
-    document.getElementById('o-trials-val').textContent = TOTALS.oT.toLocaleString();
-    document.getElementById('p-trials-val').textContent = TOTALS.pT.toLocaleString();
-    
-    const bCpt = (TOTALS.oT + TOTALS.pT) > 0 ? TOTALS.totalCost / (TOTALS.oT + TOTALS.pT) : 0;
-    document.getElementById('b-cpt-val').textContent = '₹' + Math.round(bCpt).toLocaleString();
+// ─── SEGMENTATION ─────────────────────────────────────────────────────────────
+function renderSeg() {
+  const enriched = enrichCreators().filter(r=>r.blendTrials>0);
+  const sorted = [...enriched].sort((a,b)=>a.blendCPT-b.blendCPT);
+  const medianCPT = sorted[Math.floor(sorted.length/2)]?.blendCPT || BENCH_CPT;
+  const medTrials = [...enriched].sort((a,b)=>b.blendTrials-a.blendTrials)[Math.floor(enriched.length/2)]?.blendTrials || 3;
 
-    // Leaderboard
-    const lb = document.getElementById('leaderboard-body');
-    const sorted = [...CREATORS].sort((a,b) => b.totalTrials - a.totalTrials).slice(0, 10);
-    
-    lb.innerHTML = sorted.map(c => `
-        <tr>
-            <td><b style="color:var(--accent-pa)">@${c.user}</b></td>
-            <td><span style="font-size:10px; opacity:0.7;">${c.type}</span></td>
-            <td style="text-align:right">${c.totalTrials}</td>
-            <td style="text-align:right">₹${Math.round(c.totalCost / (c.totalTrials || 1))}</td>
-        </tr>
-    `).join('');
+  const buckets = [
+    { key:'scale',   emoji:'🟢', title:'Scale Now',    sub:'Low CPTrial · High Trials',  test: r=>r.blendCPT<medianCPT && r.blendTrials>=medTrials, action:'Increase budget & PA spend immediately' },
+    { key:'optim',   emoji:'🟡', title:'Optimise',     sub:'High CPTrial · High Trials', test: r=>r.blendCPT>=medianCPT && r.blendTrials>=medTrials, action:'Review creative & targeting to cut CPTrial' },
+    { key:'test',    emoji:'🔵', title:'Test & Learn', sub:'Low CPTrial · Low Trials',   test: r=>r.blendCPT<medianCPT && r.blendTrials<medTrials,  action:'Increase PA budget to validate at scale' },
+    { key:'pause',   emoji:'🔴', title:'Pause / Review', sub:'High CPTrial · Low Trials', test: r=>r.blendCPT>=medianCPT && r.blendTrials<medTrials, action:'Pause PA spend; review content angle' },
+  ];
 
-    // Update Chart
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    if (CHARTS.main) CHARTS.main.destroy();
-    CHARTS.main = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sorted.map(c => c.user),
-            datasets: [
-                { label: 'Organic', data: sorted.map(c => c.oTrials), backgroundColor: '#00c896' },
-                { label: 'Meta PA', data: sorted.map(c => c.paTrials), backgroundColor: '#4f8ef7' }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#2a2a4a' }, ticks: { color: '#7b7fa8' } },
-                x: { grid: { display: false }, ticks: { color: '#7b7fa8' } }
-            },
-            plugins: { legend: { labels: { color: '#7b7fa8' } } }
-        }
-    });
+  const colMap = {scale:'var(--accent-org)',optim:'var(--accent-warn)',test:'var(--accent-pa)',pause:'var(--accent-red)'};
+
+  document.getElementById('bucket-grid').innerHTML = buckets.map(b => {
+    const members = enriched.filter(b.test);
+    const chips = members.slice(0,8).map(r=>`<span class="creator-chip">@${r.username}</span>`).join('');
+    const more = members.length > 8 ? `<span class="creator-chip">+${members.length-8} more</span>` : '';
+    return `<div class="bucket-card" style="border-color:${colMap[b.key]}33">
+      <div class="b-head"><div class="b-emoji">${b.emoji}</div><div><h4 style="color:${colMap[b.key]}">${b.title}</h4><div class="b-sub">${b.sub}</div></div></div>
+      <div class="b-count" style="color:${colMap[b.key]}">${members.length}<span style="font-size:14px;color:var(--text-muted);font-weight:500"> creators</span></div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">💡 ${b.action}</div>
+      <div class="creator-chips">${chips}${more}</div>
+    </div>`;
+  }).join('');
+
+  // Type breakdown charts
+  const typeGroups = {};
+  CREATORS.forEach(r => {
+    const t = r.type || 'unknown';
+    if (!typeGroups[t]) typeGroups[t] = { count:0, trials:0, spend:0 };
+    typeGroups[t].count++;
+    typeGroups[t].trials += r.org_trials + r.pa_trials;
+    typeGroups[t].spend  += r.content_cost + r.pa_spend;
+  });
+  const types = Object.entries(typeGroups).sort((a,b)=>b[1].trials-a[1].trials);
+  const typeColors = { macro:'#f25f5c', micro:'#4f8ef7', nano:'#00c896', ultra_nano:'#b56cfb', unknown:'#7b7fa8' };
+  const tLabels = types.map(([t])=>t);
+  const tCPTs   = types.map(([,d])=>d.trials>0?Math.round(d.spend/d.trials):0);
+  const tTrials = types.map(([,d])=>d.trials);
+  const tCols   = types.map(([t])=>typeColors[t]||'#888');
+
+  mkChart('typeCpt','bar',{
+    labels:tLabels, datasets:[{ label:'CPTrial (₹)', data:tCPTs, backgroundColor:tCols.map(c=>c+'66'), borderColor:tCols, borderWidth:2, borderRadius:6 }]
+  },{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#7b7fa8',callback:v=>'₹'+v},grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#7b7fa8'},grid:{display:false}} } });
+
+  mkChart('typeTrials','bar',{
+    labels:tLabels, datasets:[{ label:'Total Trials', data:tTrials, backgroundColor:tCols.map(c=>c+'66'), borderColor:tCols, borderWidth:2, borderRadius:6 }]
+  },{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#7b7fa8'},grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#7b7fa8'},grid:{display:false}} } });
 }
 
-// Start the app
-window.addEventListener('DOMContentLoaded', init);</script>
+// ─── CHART HELPER ────────────────────────────────────────────────────────────
+function mkChart(id, type, data, extraOpts) {
+  if (CHARTS[id]) CHARTS[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  CHARTS[id] = new Chart(ctx, {
+    type, data,
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:400 },
+      plugins: { legend:{ labels:{ color:'#7b7fa8', font:{size:11} } } },
+      ...extraOpts
+    }
+  });
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+window.showSec = (id, btn) => {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='funnel')      renderFunnel();
+  if (id==='leaderboard') renderLB();
+  if (id==='diagnosis')   renderDiagnosis();
+  if (id==='segmentation')renderSeg();
+};
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const raw = await fetchData();
+    const csvRows = parseCSV(raw);
+    const creators = parseCreators(csvRows);
+    if (!creators || creators.length < 5) throw new Error(`Only ${creators ? creators.length : 0} rows parsed — check sheet sharing settings.`);
+    CREATORS = creators;
+    TOTALS   = computeTotals(creators);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('last-updated').textContent =
+      `${creators.length} creators · refreshed ${new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}`;
+    renderExec();
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('error-detail').textContent = e.message +
+      '\n\nTo fix: In Google Sheets → Share → "Anyone with the link" → Viewer. Then reload.';
+    console.error(e);
+  }
+})();
+</script>
 </body>
 </html>
