@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StoryTV · Creator CPX Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+<style>
+/* CSS styles remain consistent with your brand colors */
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface2: #16213e;
+  --border: #2a2a4a;
+  --accent-org: #00c896;
+  --accent-pa: #4f8ef7;
+  --accent-blend: #b56cfb;
+  --text: #e8eaf6;
+  --text-muted: #7b7fa8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
+header { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,#4f8ef7,#b56cfb); border-radius: 8px; display:flex; align-items:center; justify-content:center; }
+#app { display:none; padding: 20px; }
+.ccard { background: var(--surface); border-radius:12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
+.compare-3 { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; }
+.chart-panel { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:16px; min-height: 300px; }
+table { width:100%; border-collapse:collapse; margin-top: 20px; }
+th { text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; padding: 10px; border-bottom: 1px solid var(--border); }
+td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.roi-badge { padding: 4px 8px; border-radius: 6px; font-weight: bold; background: rgba(79,142,247,0.1); color: var(--accent-pa); }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div class="logo-icon">📺</div>
+    <div>
+      <h1 style="font-size:16px;">StoryTV · Performance Dashboard</h1>
+      <span style="font-size:10px; color:var(--text-muted);">Live Tracker Analytics</span>
+    </div>
+  </div>
+  <span id="sync-status" style="font-size:11px; color:var(--accent-org);">● Ready</span>
+</header>
+
+<div id="loading" style="text-align:center; padding: 100px;">
+  <p>Fetching data from published tracker...</p>
+</div>
+
+<div id="app">
+  <div class="compare-3">
+    <div class="ccard">
+      <h3 style="color:var(--accent-org); margin-bottom:10px;">Organic Trials</h3>
+      <h2 id="o-trials-val">0</h2>
+    </div>
+    <div class="ccard">
+      <h3 style="color:var(--accent-pa); margin-bottom:10px;">Meta PA Trials</h3>
+      <h2 id="p-trials-val">0</h2>
+    </div>
+    <div class="ccard">
+      <h3 style="color:var(--accent-blend); margin-bottom:10px;">Blended CPT</h3>
+      <h2 id="b-cpt-val">₹0</h2>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <canvas id="performanceChart"></canvas>
+  </div>
+
+  <div class="ccard" style="margin-top:20px;">
+    <h3>Top Performing Creators</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Creator</th>
+          <th>Type</th>
+          <th>Total Trials</th>
+          <th>Efficiency</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const PUBLISHED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGQ1U2rmf9M0BODebWeLV-1bxQOETA3i6DE54EqMkr73MyguQaSFO4P1UnIf0-elB6VWwK83fe2c6Q/pub?gid=0&single=true&output=csv';
+
+async function init() {
+  const loadingEl = document.getElementById('loading');
+  try {
+    console.log("Attempting to fetch data from:", PUBLISHED_CSV_URL);
+    
+    // Adding a cache-buster to ensure we aren't seeing old data
+    const response = await fetch(`${PUBLISHED_CSV_URL}&cache_bust=${Date.now()}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status}`);
+    }
+
+    const csvText = await response.text();
+    console.log("Raw CSV Data Sample:", csvText.substring(0, 200)); // Log first 200 chars
+
+    // Check if we actually got HTML (the login page) instead of CSV
+    if (csvText.includes('<!DOCTYPE html>') || csvText.includes('google-signin')) {
+      throw new Error("Received HTML instead of CSV. Is the sheet definitely 'Published to Web' and not just 'Shared'?");
+    }
+
+    // Parse rows (Handling both \n and \r\n line endings)
+    const rows = csvText.split(/\r?\n/).map(row => {
+      // Improved CSV split to handle quotes and commas
+      return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+    });
+
+    if (rows.length < 2) throw new Error("CSV seems empty or poorly formatted.");
+
+    const header = rows[0].map(h => h.toLowerCase().trim());
+    console.log("Detected Headers:", header);
+
+    // Map columns dynamically
+    const findIdx = (terms) => {
+      const i = header.findIndex(h => terms.some(t => h.includes(t)));
+      return i === -1 ? null : i;
+    };
+
+    const idx = {
+      user: findIdx(['username', 'influencer']),
+      type: findIdx(['type', 'category']),
+      oTrials: findIdx(['acquisitions', 'registrations', 'trials']),
+      paTrials: findIdx(['pa_trials', 'pa_purchases', 'purchases']),
+      oCost: findIdx(['content cost', 'fee']),
+      paCost: findIdx(['pa_spend', 'ad spend', 'spend'])
+    };
+
+    console.log("Mapped Column Indices:", idx);
+
+    CREATORS = rows.slice(1)
+      .filter(r => r[idx.user]) // Skip rows with no username
+      .map((r, i) => {
+        return {
+          user: (r[idx.user] || `ID_${i}`).replace(/^@/,''),
+          type: r[idx.type] || 'Nano',
+          oTrials: cn(r[idx.oTrials]),
+          paTrials: cn(r[idx.paTrials]),
+          oCost: cn(r[idx.oCost]),
+          paCost: cn(r[idx.paCost])
+        };
+      });
+
+    if (CREATORS.length === 0) throw new Error("No creator data found after parsing.");
+
+    renderDashboard();
+    loadingEl.style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+  } catch (err) {
+    console.error("Dashboard Error:", err);
+    loadingEl.innerHTML = `
+      <div style="color:#f25f5c; padding:20px; border:1px solid #f25f5c; border-radius:8px; background:rgba(242,95,92,0.1);">
+        <h3>⚠️ Connection Error</h3>
+        <p>${err.message}</p>
+        <p style="font-size:11px; margin-top:10px; color:var(--text-muted);">
+          Check the Browser Console (F12) for technical details.
+        </p>
+        <button onclick="location.reload()" style="margin-top:15px; padding:8px 16px; background:var(--accent-pa); color:white; border:none; border-radius:4px; cursor:pointer;">Retry Connection</button>
+      </div>
+    `;
+  }
+}</script>
+</body>
+</html>
