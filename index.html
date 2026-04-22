@@ -87,14 +87,14 @@
   .ftab:hover:not(.active){color:var(--text);background:var(--bg4);}
 
   /* FUNNEL STEPS */
-  .funnel-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
-  .funnel-step{background:var(--bg3);border-radius:8px;padding:14px;text-align:center;border:1px solid var(--border);border-top:2px solid var(--blue);position:relative;}
-  .step-icon{font-size:18px;margin-bottom:6px;}
-  .step-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-  .step-num{font-size:22px;font-weight:700;margin-bottom:4px;}
-  .step-conv{font-size:11px;color:var(--green);}
-  .step-cost{font-size:11px;color:var(--text3);}
-  .step-arrow{position:absolute;right:-13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;z-index:2;}
+  .funnel-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .funnel-step{background:var(--bg3);border-radius:10px;padding:24px 18px;text-align:center;border:1px solid var(--border);border-top:3px solid var(--blue);position:relative;}
+  .step-icon{font-size:26px;margin-bottom:10px;}
+  .step-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .step-num{font-size:30px;font-weight:700;margin-bottom:8px;}
+  .step-conv{font-size:15px;font-weight:600;color:var(--green);}
+  .step-cost{font-size:14px;font-weight:500;color:var(--text2);margin-top:4px;}
+  .step-arrow{position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:20px;z-index:2;}
 
   /* LEADERBOARD */
   .sort-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
@@ -251,6 +251,7 @@
     <button class="col-btn on" onclick="toggleCol('organic',this)">Organic</button>
     <button class="col-btn on" onclick="toggleCol('pa',this)">PA</button>
     <button class="col-btn on" onclick="toggleCol('blended',this)">Blended</button>
+    <button class="col-btn on" onclick="toggleCol('cpx',this)">CPX</button>
     <button class="col-btn on" onclick="toggleCol('funnel',this)">Funnel</button>
   </div>
   <div class="lb-wrap">
@@ -260,7 +261,6 @@
           <th>Creator</th>
           <th>Type</th>
           <th class="sortable" onclick="setSortLBH('roiScore',false,this)">ROI Score<span class="sar">⇅</span></th>
-          <th class="sortable col-organic" onclick="setSortLBH('orgCPTrial',true,this)">Org CPTrial<span class="sar">⇅</span></th>
           <th class="sortable col-organic" onclick="setSortLBH('orgViews',false,this)">Org Views<span class="sar">⇅</span></th>
           <th class="sortable col-organic" onclick="setSortLBH('orgClicks',false,this)">Org Clicks<span class="sar">⇅</span></th>
           <th class="sortable col-organic" onclick="setSortLBH('orgInstalls',false,this)">Org Installs<span class="sar">⇅</span></th>
@@ -270,10 +270,11 @@
           <th class="sortable col-pa" onclick="setSortLBH('paClicks',false,this)">PA Clicks<span class="sar">⇅</span></th>
           <th class="sortable col-pa" onclick="setSortLBH('paInstalls',false,this)">PA Installs<span class="sar">⇅</span></th>
           <th class="sortable col-pa" onclick="setSortLBH('paTrials',false,this)">PA Trials<span class="sar">⇅</span></th>
-          <th class="sortable col-pa" onclick="setSortLBH('paCPTrial',true,this)">PA CPTrial<span class="sar">⇅</span></th>
           <th class="sortable sort-on col-blended" onclick="setSortLBH('totalTrials',false,this)">Total Trials<span class="sar">↓</span></th>
           <th class="sortable col-blended" onclick="setSortLBH('totalSpend',false,this)">Total Spend<span class="sar">⇅</span></th>
-          <th class="sortable col-blended" onclick="setSortLBH('blendCPTrial',true,this)">Blend CPTrial<span class="sar">⇅</span></th>
+          <th class="sortable col-cpx" onclick="setSortLBH('orgCPTrial',true,this)">Org CPTrial<span class="sar">⇅</span></th>
+          <th class="sortable col-cpx" onclick="setSortLBH('paCPTrial',true,this)">PA CPTrial<span class="sar">⇅</span></th>
+          <th class="sortable col-cpx" onclick="setSortLBH('blendCPTrial',true,this)">Blend CPTrial<span class="sar">⇅</span></th>
           <th class="col-funnel">Funnel</th>
         </tr>
       </thead>
@@ -302,7 +303,7 @@ const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 // ═══════════════════════════════════════════════════════════════════
 let CREATORS = [];
 let lbSort = { col:'totalTrials', asc:false };
-let colVis = { organic:true, pa:true, blended:true, funnel:true };
+let colVis = { organic:true, pa:true, blended:true, cpx:true, funnel:true };
 let lastFetch = null;
 let spendChart, trialChart, fVolChart, fCPXChart;
 let funnelMode = 'organic';
@@ -488,15 +489,22 @@ function agg() {
   const cpClickOrg = orgClicks > 0 ? Math.round(contentCost / orgClicks) : 0;
   const cpInstallOrg = orgInstalls > 0 ? Math.round(contentCost / orgInstalls) : 0;
   const cpTrialOrg = orgTrials > 0 ? Math.round(contentCost / orgTrials) : 0;
+  const cpClickPA = paClicks > 0 ? Math.round(paSpend / paClicks) : 0;
+  const cpInstallPA = paInstalls > 0 ? Math.round(paSpend / paInstalls) : 0;
   const cpTrialPA = paTrials > 0 ? Math.round(paSpend / paTrials) : 0;
   const cpTrialBlend = totalTrials > 0 ? Math.round(totalSpend / totalTrials) : 0;
+  const totalClicks = orgClicks + paClicks;
+  const totalInstalls = orgInstalls + paInstalls;
+  const cpClickBlend = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+  const cpInstallBlend = totalInstalls > 0 ? Math.round(totalSpend / totalInstalls) : 0;
   return {
     orgViews, orgClicks, orgInstalls, orgTrials,
     paImpr, paClicks, paInstalls, paTrials,
     contentCost, paSpend, totalTrials, totalSpend,
-    cpClickOrg, cpInstallOrg, cpTrialOrg, cpTrialPA, cpTrialBlend,
-    totalClicks: orgClicks + paClicks,
-    totalInstalls: orgInstalls + paInstalls,
+    cpClickOrg, cpInstallOrg, cpTrialOrg,
+    cpClickPA, cpInstallPA, cpTrialPA,
+    cpClickBlend, cpInstallBlend, cpTrialBlend,
+    totalClicks, totalInstalls,
   };
 }
 
@@ -545,7 +553,7 @@ function renderExecMetrics(a) {
     <div class="mrow"><span class="mk">Installs</span><span class="mv">${fmt(a.paInstalls)||'—'}</span></div>
     <div class="mrow"><span class="mk">Trials (Purchases)</span><span class="mv">${fmt(a.paTrials)}</span></div>
     <div class="mrow"><span class="mk">Ad Spend</span><span class="mv">${inr(a.paSpend)||'₹0'}</span></div>
-    <div class="mrow"><span class="mk">CP Install</span><span class="mv">—</span></div>
+    <div class="mrow"><span class="mk">CP Install</span><span class="mv">${a.cpInstallPA > 0 ? inr(a.cpInstallPA) : '—'}</span></div>
     <div class="mrow"><span class="mk">CP Trial</span><span class="mv v-green">${a.cpTrialPA > 0 ? inr(a.cpTrialPA) : '₹0'}</span></div>
   </div>
   <div class="metric-card">
@@ -653,24 +661,24 @@ function initFunnelCharts(mode, a) {
   let steps;
   if (mode === 'organic') {
     steps = [
-      {icon:'👁',label:'Views',val:a.orgViews,cost:a.orgViews>0?+(a.contentCost/a.orgViews).toFixed(2):null},
-      {icon:'🖱',label:'Clicks',val:a.orgClicks,conv:a.orgViews>0?((a.orgClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickOrg},
-      {icon:'📲',label:'Installs',val:a.orgInstalls,conv:a.orgClicks>0?((a.orgInstalls/a.orgClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallOrg},
-      {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg},
+      {icon:'👁',label:'Views',val:a.orgViews,cost:null},
+      {icon:'🖱',label:'Clicks',val:a.orgClicks,conv:a.orgViews>0?((a.orgClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickOrg||null},
+      {icon:'📲',label:'Installs',val:a.orgInstalls,conv:a.orgClicks>0?((a.orgInstalls/a.orgClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallOrg||null},
+      {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg||null},
     ];
   } else if (mode === 'meta') {
     steps = [
       {icon:'📡',label:'Impressions',val:a.paImpr,cost:null},
-      {icon:'🖱',label:'Link Clicks',val:a.paClicks,conv:a.paImpr>0?((a.paClicks/a.paImpr)*100).toFixed(2)+'%':null,cost:null},
-      {icon:'📲',label:'Installs',val:a.paInstalls||null,conv:null,cost:null},
-      {icon:'🎬',label:'Trials',val:a.paTrials,conv:null,cost:a.cpTrialPA||0},
+      {icon:'🖱',label:'Link Clicks',val:a.paClicks,conv:a.paImpr>0?((a.paClicks/a.paImpr)*100).toFixed(2)+'%':null,cost:a.cpClickPA||null},
+      {icon:'📲',label:'Installs',val:a.paInstalls||null,conv:a.paClicks>0&&a.paInstalls?((a.paInstalls/a.paClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallPA||null},
+      {icon:'🎬',label:'Trials',val:a.paTrials,conv:a.paInstalls>0?((a.paTrials/a.paInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialPA||null},
     ];
   } else {
     steps = [
       {icon:'👁',label:'Views',val:a.orgViews,cost:null},
-      {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.orgViews>0?((a.totalClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:Math.round(a.totalSpend/(a.totalClicks||1))},
-      {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:Math.round(a.totalSpend/(a.totalInstalls||1))},
-      {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend},
+      {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.orgViews>0?((a.totalClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickBlend||null},
+      {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallBlend||null},
+      {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend||null},
     ];
   }
 
@@ -686,7 +694,7 @@ function initFunnelCharts(mode, a) {
 
   const labels = steps.map(s=>s.label);
   const vals = steps.map(s=>s.val||0);
-  const costs = steps.map(s=>s.cost||0);
+  const costs = steps.map(s=>s.cost ?? null);
 
   if (fVolChart) fVolChart.destroy();
   if (fCPXChart) fCPXChart.destroy();
@@ -698,9 +706,9 @@ function initFunnelCharts(mode, a) {
   });
 
   fCPXChart = new Chart(document.getElementById('fCPXChart').getContext('2d'), {
-    type:'line', data:{labels,datasets:[{data:costs,borderColor:'#2dd4bf',backgroundColor:'rgba(45,212,191,.1)',tension:.4,fill:true,pointBackgroundColor:'#2dd4bf',pointRadius:5}]},
+    type:'line', data:{labels,datasets:[{data:costs,borderColor:'#2dd4bf',backgroundColor:'rgba(45,212,191,.1)',tension:.4,fill:true,pointBackgroundColor:'#2dd4bf',pointRadius:5,spanGaps:true}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{ticks:{color:'#64748b',callback:v=>'₹'+v.toLocaleString()},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
+      scales:{y:{ticks:{color:'#64748b',callback:v=>'₹'+Math.round(v).toLocaleString('en-IN')},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
   });
 }
 
@@ -768,7 +776,6 @@ function renderLeaderboard() {
       <td><div class="cname">@${c.name}</div><div class="cid">ID ${c.id}</div></td>
       <td><span class="type-b ${tc}">${c.type.toUpperCase()}</span></td>
       <td>${roiBadge(c.roiGrade||'D')}</td>
-      <td class="col-organic ${cpColor(c.orgCPTrial,median)}">${c.orgCPTrial?'₹'+c.orgCPTrial.toLocaleString('en-IN'):'—'}</td>
       <td class="col-organic">${c.orgViews?c.orgViews.toLocaleString('en-IN'):'—'}</td>
       <td class="col-organic">${c.orgClicks?c.orgClicks.toLocaleString('en-IN'):'—'}</td>
       <td class="col-organic">${c.orgInstalls?c.orgInstalls.toLocaleString('en-IN'):'—'}</td>
@@ -778,10 +785,11 @@ function renderLeaderboard() {
       <td class="col-pa">${c.paClicks?c.paClicks.toLocaleString('en-IN'):'—'}</td>
       <td class="col-pa">${c.paInstalls?c.paInstalls.toLocaleString('en-IN'):'—'}</td>
       <td class="col-pa">${c.paTrials||'—'}</td>
-      <td class="col-pa ${cpColor(c.paCPTrial,median)}">${c.paCPTrial?'₹'+c.paCPTrial.toLocaleString('en-IN'):'—'}</td>
       <td class="col-blended" style="font-weight:700;color:var(--blue)">${c.totalTrials||'—'}</td>
       <td class="col-blended">${c.totalSpend?'₹'+c.totalSpend.toLocaleString('en-IN'):'—'}</td>
-      <td class="col-blended ${cpColor(c.blendCPTrial,median)}">${c.blendCPTrial?'₹'+c.blendCPTrial.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-cpx ${cpColor(c.orgCPTrial,median)}">${c.orgCPTrial?'₹'+c.orgCPTrial.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-cpx ${cpColor(c.paCPTrial,median)}">${c.paCPTrial?'₹'+c.paCPTrial.toLocaleString('en-IN'):'—'}</td>
+      <td class="col-cpx ${cpColor(c.blendCPTrial,median)}">${c.blendCPTrial?'₹'+c.blendCPTrial.toLocaleString('en-IN'):'—'}</td>
       <td class="col-funnel">${spark(c.totalTrials)}</td>
     </tr>`;
   }).join('');
@@ -794,7 +802,7 @@ function toggleCol(g, el) {
   applyColVis();
 }
 function applyColVis() {
-  ['organic','pa','blended','funnel'].forEach(g => {
+  ['organic','pa','blended','cpx','funnel'].forEach(g => {
     document.querySelectorAll(`.col-${g}`).forEach(el => el.style.display = colVis[g] ? '' : 'none');
   });
 }
