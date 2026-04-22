@@ -95,6 +95,13 @@
   .step-conv{font-size:15px;font-weight:600;color:var(--green);}
   .step-cost{font-size:14px;font-weight:500;color:var(--text2);margin-top:4px;}
   .step-arrow{position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:20px;z-index:2;}
+  .step-spend{font-size:12px;color:var(--text3);margin-top:6px;border-top:1px solid rgba(255,255,255,.06);padding-top:6px;}
+  .step-spend strong{color:var(--amber);font-weight:600;}
+  .funnel-spend-bar{display:flex;gap:16px;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:14px;flex-wrap:wrap;}
+  .fsb-item{display:flex;align-items:center;gap:8px;font-size:13px;}
+  .fsb-label{color:var(--text3);}
+  .fsb-val{font-weight:700;color:var(--amber);}
+  .fsb-sep{width:1px;height:18px;background:var(--border);}
 
   /* LEADERBOARD */
   .sort-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
@@ -210,6 +217,7 @@
       <div class="ftab" onclick="switchFunnel('blended',this)">Blended</div>
     </div>
   </div>
+  <div class="funnel-spend-bar" id="funnel-spend-bar"></div>
   <div class="funnel-steps" id="funnel-steps"></div>
   <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
     <div class="chart-box">
@@ -665,26 +673,36 @@ function switchFunnel(mode, el) {
 
 function initFunnelCharts(mode, a) {
   let steps;
+  // Spend summary bar
+  const spendBarData = mode === 'organic'
+    ? [{label:'Content Spend', val:a.contentCost}]
+    : mode === 'meta'
+    ? [{label:'Ad Spend', val:a.paSpend}]
+    : [{label:'Content Spend', val:a.contentCost}, {label:'Ad Spend', val:a.paSpend}, {label:'Total Spend', val:a.totalSpend}];
+  document.getElementById('funnel-spend-bar').innerHTML = spendBarData.map((d,i) =>
+    `${i>0?'<div class="fsb-sep"></div>':''}<div class="fsb-item"><span class="fsb-label">${d.label}</span><span class="fsb-val">₹${Math.round(d.val).toLocaleString('en-IN')}</span></div>`
+  ).join('');
+
   if (mode === 'organic') {
     steps = [
-      {icon:'👁',label:'Views',val:a.orgViews,cost:a.cpmOrg||null,costLabel:'CPM'},
+      {icon:'👁',label:'Views',val:a.orgViews,cost:a.cpmOrg||null,costLabel:'CPM',spend:a.contentCost,spendLabel:'Content Spend'},
       {icon:'🖱',label:'Clicks',val:a.orgClicks,conv:a.orgViews>0?((a.orgClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickOrg||null},
       {icon:'📲',label:'Installs',val:a.orgInstalls,conv:a.orgClicks>0?((a.orgInstalls/a.orgClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallOrg||null},
-      {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg||null},
+      {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg||null,spend:a.contentCost,spendLabel:'Content Spend'},
     ];
   } else if (mode === 'meta') {
     steps = [
-      {icon:'📡',label:'Impressions',val:a.paImpr,cost:a.cpmPA||null,costLabel:'CPM'},
+      {icon:'📡',label:'Impressions',val:a.paImpr,cost:a.cpmPA||null,costLabel:'CPM',spend:a.paSpend,spendLabel:'Ad Spend'},
       {icon:'🖱',label:'Link Clicks',val:a.paClicks,conv:a.paImpr>0?((a.paClicks/a.paImpr)*100).toFixed(2)+'%':null,cost:a.cpClickPA||null},
       {icon:'📲',label:'Installs',val:a.paInstalls||null,conv:a.paClicks>0&&a.paInstalls?((a.paInstalls/a.paClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallPA||null},
-      {icon:'🎬',label:'Trials',val:a.paTrials,conv:a.paInstalls>0?((a.paTrials/a.paInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialPA||null},
+      {icon:'🎬',label:'Trials',val:a.paTrials,conv:a.paInstalls>0?((a.paTrials/a.paInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialPA||null,spend:a.paSpend,spendLabel:'Ad Spend'},
     ];
   } else {
     steps = [
-      {icon:'👁',label:'Views + Impr.',val:a.totalReach,cost:a.cpmBlend||null,costLabel:'CPM'},
+      {icon:'👁',label:'Views + Impr.',val:a.totalReach,cost:a.cpmBlend||null,costLabel:'CPM',spend:a.totalSpend,spendLabel:'Total Spend'},
       {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.totalReach>0?((a.totalClicks/a.totalReach)*100).toFixed(2)+'%':null,cost:a.cpClickBlend||null},
       {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallBlend||null},
-      {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend||null},
+      {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend||null,spend:a.totalSpend,spendLabel:'Total Spend'},
     ];
   }
 
@@ -695,6 +713,7 @@ function initFunnelCharts(mode, a) {
       <div class="step-num">${s.val ? s.val.toLocaleString('en-IN') : '—'}</div>
       ${s.conv ? `<div class="step-conv">${s.conv}</div>` : ''}
       ${s.cost != null ? `<div class="step-cost">${s.costLabel ? s.costLabel+' ' : ''}${s.cost > 0 ? '₹'+s.cost.toLocaleString('en-IN') : '₹0'}</div>` : ''}
+      ${s.spend != null ? `<div class="step-spend"><strong>${s.spendLabel||'Spend'}: ₹${Math.round(s.spend).toLocaleString('en-IN')}</strong></div>` : ''}
     </div>`
   ).join('');
 
