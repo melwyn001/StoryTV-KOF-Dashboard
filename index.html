@@ -497,6 +497,9 @@ function agg() {
   const totalInstalls = orgInstalls + paInstalls;
   const cpClickBlend = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
   const cpInstallBlend = totalInstalls > 0 ? Math.round(totalSpend / totalInstalls) : 0;
+  const cpmOrg = orgViews > 0 ? Math.round(contentCost / orgViews * 1000) : 0;
+  const cpmPA = paImpr > 0 ? Math.round(paSpend / paImpr * 1000) : 0;
+  const cpmBlend = orgViews > 0 ? Math.round(totalSpend / orgViews * 1000) : 0;
   return {
     orgViews, orgClicks, orgInstalls, orgTrials,
     paImpr, paClicks, paInstalls, paTrials,
@@ -504,6 +507,7 @@ function agg() {
     cpClickOrg, cpInstallOrg, cpTrialOrg,
     cpClickPA, cpInstallPA, cpTrialPA,
     cpClickBlend, cpInstallBlend, cpTrialBlend,
+    cpmOrg, cpmPA, cpmBlend,
     totalClicks, totalInstalls,
   };
 }
@@ -661,21 +665,21 @@ function initFunnelCharts(mode, a) {
   let steps;
   if (mode === 'organic') {
     steps = [
-      {icon:'👁',label:'Views',val:a.orgViews,cost:null},
+      {icon:'👁',label:'Views',val:a.orgViews,cost:a.cpmOrg||null,costLabel:'CPM'},
       {icon:'🖱',label:'Clicks',val:a.orgClicks,conv:a.orgViews>0?((a.orgClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickOrg||null},
       {icon:'📲',label:'Installs',val:a.orgInstalls,conv:a.orgClicks>0?((a.orgInstalls/a.orgClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallOrg||null},
       {icon:'🎬',label:'Trials',val:a.orgTrials,conv:a.orgInstalls>0?((a.orgTrials/a.orgInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialOrg||null},
     ];
   } else if (mode === 'meta') {
     steps = [
-      {icon:'📡',label:'Impressions',val:a.paImpr,cost:null},
+      {icon:'📡',label:'Impressions',val:a.paImpr,cost:a.cpmPA||null,costLabel:'CPM'},
       {icon:'🖱',label:'Link Clicks',val:a.paClicks,conv:a.paImpr>0?((a.paClicks/a.paImpr)*100).toFixed(2)+'%':null,cost:a.cpClickPA||null},
       {icon:'📲',label:'Installs',val:a.paInstalls||null,conv:a.paClicks>0&&a.paInstalls?((a.paInstalls/a.paClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallPA||null},
       {icon:'🎬',label:'Trials',val:a.paTrials,conv:a.paInstalls>0?((a.paTrials/a.paInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialPA||null},
     ];
   } else {
     steps = [
-      {icon:'👁',label:'Views',val:a.orgViews,cost:null},
+      {icon:'👁',label:'Views',val:a.orgViews,cost:a.cpmBlend||null,costLabel:'CPM'},
       {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.orgViews>0?((a.totalClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickBlend||null},
       {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallBlend||null},
       {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend||null},
@@ -688,7 +692,7 @@ function initFunnelCharts(mode, a) {
       <div class="step-label">${s.label}</div>
       <div class="step-num">${s.val ? s.val.toLocaleString('en-IN') : '—'}</div>
       ${s.conv ? `<div class="step-conv">${s.conv}</div>` : ''}
-      ${s.cost != null ? `<div class="step-cost">${s.cost > 0 ? '₹'+s.cost.toLocaleString('en-IN') : '₹0'}</div>` : ''}
+      ${s.cost != null ? `<div class="step-cost">${s.costLabel ? s.costLabel+' ' : ''}${s.cost > 0 ? '₹'+s.cost.toLocaleString('en-IN') : '₹0'}</div>` : ''}
     </div>`
   ).join('');
 
