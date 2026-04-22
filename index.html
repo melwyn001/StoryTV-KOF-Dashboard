@@ -499,7 +499,9 @@ function agg() {
   const cpInstallBlend = totalInstalls > 0 ? Math.round(totalSpend / totalInstalls) : 0;
   const cpmOrg = orgViews > 0 ? Math.round(contentCost / orgViews * 1000) : 0;
   const cpmPA = paImpr > 0 ? Math.round(paSpend / paImpr * 1000) : 0;
-  const cpmBlend = orgViews > 0 ? Math.round(totalSpend / orgViews * 1000) : 0;
+  const totalReach = orgViews + paImpr;
+  const cpmBlend = totalReach > 0 ? Math.round(totalSpend / totalReach * 1000) : 0;
+
   return {
     orgViews, orgClicks, orgInstalls, orgTrials,
     paImpr, paClicks, paInstalls, paTrials,
@@ -508,7 +510,7 @@ function agg() {
     cpClickPA, cpInstallPA, cpTrialPA,
     cpClickBlend, cpInstallBlend, cpTrialBlend,
     cpmOrg, cpmPA, cpmBlend,
-    totalClicks, totalInstalls,
+    totalClicks, totalInstalls, totalReach,
   };
 }
 
@@ -562,7 +564,7 @@ function renderExecMetrics(a) {
   </div>
   <div class="metric-card">
     <div class="metric-badge badge-purple">🔮 BLENDED</div>
-    <div class="mrow"><span class="mk">Total Views + Impressions</span><span class="mv">${fmt(a.orgViews)}</span></div>
+    <div class="mrow"><span class="mk">Total Views + Impressions</span><span class="mv">${fmt(a.orgViews + a.paImpr)}</span></div>
     <div class="mrow"><span class="mk">Total Clicks</span><span class="mv">${fmt(a.totalClicks)}</span></div>
     <div class="mrow"><span class="mk">Total Installs</span><span class="mv">${fmt(a.totalInstalls)}</span></div>
     <div class="mrow"><span class="mk">Total Trials</span><span class="mv">${fmt(a.totalTrials)}</span></div>
@@ -679,8 +681,8 @@ function initFunnelCharts(mode, a) {
     ];
   } else {
     steps = [
-      {icon:'👁',label:'Views',val:a.orgViews,cost:a.cpmBlend||null,costLabel:'CPM'},
-      {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.orgViews>0?((a.totalClicks/a.orgViews)*100).toFixed(1)+'%':null,cost:a.cpClickBlend||null},
+      {icon:'👁',label:'Views + Impr.',val:a.totalReach,cost:a.cpmBlend||null,costLabel:'CPM'},
+      {icon:'🖱',label:'Clicks',val:a.totalClicks,conv:a.totalReach>0?((a.totalClicks/a.totalReach)*100).toFixed(2)+'%':null,cost:a.cpClickBlend||null},
       {icon:'📲',label:'Installs',val:a.totalInstalls,conv:a.totalClicks>0?((a.totalInstalls/a.totalClicks)*100).toFixed(1)+'%':null,cost:a.cpInstallBlend||null},
       {icon:'🎬',label:'Trials',val:a.totalTrials,conv:a.totalInstalls>0?((a.totalTrials/a.totalInstalls)*100).toFixed(1)+'%':null,cost:a.cpTrialBlend||null},
     ];
