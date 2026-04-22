@@ -145,12 +145,14 @@
 </head>
 <body>
 
+<!-- LOADING -->
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div class="loading-text" id="loading-text">Fetching live data from Google Sheet…</div>
 </div>
 <div id="error-banner"></div>
 
+<!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
     <div class="logo">S</div>
@@ -165,12 +167,14 @@
   </div>
 </div>
 
+<!-- NAV -->
 <div class="nav">
   <div class="nav-tab active" onclick="showPage('exec',this)">📊 Executive Summary</div>
   <div class="nav-tab" onclick="showPage('funnel',this)">🔽 Funnel Analysis</div>
   <div class="nav-tab" onclick="showPage('leaderboard',this)">🏆 Creator Leaderboard</div>
 </div>
 
+<!-- EXEC PAGE -->
 <div id="page-exec" class="page active">
   <div class="page-title">Executive Summary</div>
   <div class="page-sub">All numbers live from Google Sheet · CPX = Cost per event · auto-refreshes every 5 min</div>
@@ -200,6 +204,7 @@
   </div>
 </div>
 
+<!-- FUNNEL PAGE -->
 <div id="page-funnel" class="page">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div>
@@ -216,7 +221,7 @@
   <div class="funnel-steps" id="funnel-steps"></div>
   <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
     <div class="chart-box">
-      <div class="chart-title">Funnel Volume</div>
+      <div class="chart-title">Funnel Volume (log scale)</div>
       <div class="chart-wrap"><canvas id="fVolChart"></canvas></div>
     </div>
     <div class="chart-box">
@@ -226,6 +231,7 @@
   </div>
 </div>
 
+<!-- LEADERBOARD PAGE -->
 <div id="page-leaderboard" class="page">
   <div class="page-title">Creator Leaderboard</div>
   <div class="page-sub">Full funnel health + ROI Score per creator · sorted live from sheet data</div>
@@ -288,19 +294,17 @@
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // CONFIG
+// PUB_KEY comes from the published URL:
+//   https://docs.google.com/spreadsheets/d/e/PUB_KEY/pubhtml
+// To update: File → Share → Publish to web → pick tab → CSV → copy key
+// GID: the gid= param in the pubhtml URL for each tab
 // ═══════════════════════════════════════════════════════════════════
 const PUB_KEY = '2PACX-1vQGQ1U2rmf9M0BODebWeLV-1bxQOETA3i6DE54EqMkr73MyguQaSFO4P1UnIf0-elB6VWwK83fe2c6Q';
-const GID = '0';
+const GID = '0'; // tab GID — update if fetching a different tab
+// Published sheets serve CSV with CORS: * — NO proxy needed
 const CSV_URL = `https://docs.google.com/spreadsheets/d/e/${PUB_KEY}/pub?output=csv&gid=${GID}`;
-const AUTO_REFRESH_MS = 5 * 60 * 1000; 
 
-// FIX: Added HTML escape function to prevent XSS vulnerability
-function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>'"]/g, match => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  })[match]);
-}
+const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
@@ -338,19 +342,30 @@ function n(v) {
 }
 
 function processRows(rows) {
+  // Find header row (contains 'Username')
   let hIdx = rows.findIndex(r => r.some(c => c.toLowerCase().includes('username')));
   if (hIdx < 0) hIdx = 0;
   const headers = rows[hIdx].map(h => h.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_'));
 
   const col = name => {
     const synonyms = {
-      id: ['influencer_id'], username: ['username'], type: ['influencer_type', 'type'],
-      orgViews: ['organic_views'], orgClicks: ['org_clicks', 'org__clicks'],
-      orgInstalls: ['org_installs', 'org__installs'], orgTrials: ['org_acquisitions', 'org__acquisitions'],
-      contentCost: ['content_cost'], paSpend: ['pa_spend'], paImpr: ['pa_impressions'],
-      paViews: ['pa_video_views'], paClicks: ['pa_link_clicks'], paInstalls: ['pa_installs'], paTrials: ['pa_purchases'],
+      id: ['influencer_id'],
+      username: ['username'],
+      type: ['influencer_type', 'type'],
+      orgViews: ['organic_views'],
+      orgClicks: ['org_clicks', 'org__clicks'],
+      orgInstalls: ['org_installs', 'org__installs'],
+      orgTrials: ['org_acquisitions', 'org__acquisitions'],
+      contentCost: ['content_cost'],
+      paSpend: ['pa_spend'],
+      paImpr: ['pa_impressions'],
+      paViews: ['pa_video_views'],
+      paClicks: ['pa_link_clicks'],
+      paInstalls: ['pa_installs'],
+      paTrials: ['pa_purchases'],
     };
-    for (const k of (synonyms[name] || [name])) {
+    const keys = synonyms[name] || [name];
+    for (const k of keys) {
       const i = headers.findIndex(h => h.includes(k));
       if (i >= 0) return i;
     }
@@ -365,8 +380,7 @@ function processRows(rows) {
   };
 
   const data = rows.slice(hIdx + 1)
-    // FIX: Added optional chaining (?.) and type check to prevent crash if column is entirely missing
-    .filter(r => r.length > 5 && r[C.name] && typeof r[C.name] === 'string' && !r[C.name].toLowerCase().includes('total'))
+    .filter(r => r.length > 5 && r[C.name] && r[C.name] !== '' && !r[C.name].toLowerCase().includes('total'))
     .map(r => {
       const orgTrials = n(r[C.orgTrials]);
       const paTrials = n(r[C.paTrials]);
@@ -374,22 +388,28 @@ function processRows(rows) {
       const paSpend = n(r[C.paSpend]);
       const totalTrials = orgTrials + paTrials;
       const totalSpend = contentCost + paSpend;
-      
+      const blendCPTrial = totalTrials > 0 ? Math.round(totalSpend / totalTrials) : null;
+      const orgCPTrial = orgTrials > 0 ? Math.round(contentCost / orgTrials) : null;
+      const paCPTrial = paTrials > 0 ? Math.round(paSpend / paTrials) : null;
       return {
         id: n(r[C.id]),
         name: (r[C.name] || '').replace(/\\/g,''),
         type: (r[C.type] || 'nano').toLowerCase(),
-        orgViews: n(r[C.orgViews]), orgClicks: n(r[C.orgClicks]), orgInstalls: n(r[C.orgInstalls]), orgTrials, 
-        paSpend, contentCost, totalSpend, paImpr: n(r[C.paImpr]), paClicks: n(r[C.paClicks]), 
-        paInstalls: n(r[C.paInstalls]), paTrials, totalTrials, 
-        blendCPTrial: totalTrials > 0 ? Math.round(totalSpend / totalTrials) : null, 
-        orgCPTrial: orgTrials > 0 ? Math.round(contentCost / orgTrials) : null, 
-        paCPTrial: paTrials > 0 ? Math.round(paSpend / paTrials) : null,
+        orgViews: n(r[C.orgViews]),
+        orgClicks: n(r[C.orgClicks]),
+        orgInstalls: n(r[C.orgInstalls]),
+        orgTrials, paSpend, contentCost, totalSpend,
+        paImpr: n(r[C.paImpr]),
+        paClicks: n(r[C.paClicks]),
+        paInstalls: n(r[C.paInstalls]),
+        paTrials, totalTrials, blendCPTrial, orgCPTrial, paCPTrial,
       };
     })
     .filter(c => c.name);
 
-  const ranked = [...data].filter(c => c.blendCPTrial && c.blendCPTrial > 0).sort((a,b) => a.blendCPTrial - b.blendCPTrial);
+  // Assign ROI scores based on blendCPTrial rank (lower = better)
+  const ranked = [...data].filter(c => c.blendCPTrial && c.blendCPTrial > 0)
+    .sort((a,b) => a.blendCPTrial - b.blendCPTrial);
   ranked.forEach((c, i) => {
     const pct = (i / ranked.length) * 100;
     c.roiScore = Math.round(100 - pct);
@@ -405,10 +425,11 @@ function processRows(rows) {
 // ═══════════════════════════════════════════════════════════════════
 // DATA FETCH
 // ═══════════════════════════════════════════════════════════════════
+// Fallback proxies tried in order if direct fetch fails
 const PROXIES = [
-  url => url, 
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => url,                                                                  // 1. Direct (works for /pub URLs)
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,     // 2. allorigins
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,                  // 3. corsproxy.io
 ];
 
 async function tryFetch(url) {
@@ -418,9 +439,9 @@ async function tryFetch(url) {
       if (!res.ok) continue;
       const text = await res.text();
       if (text && text.length > 100) return text;
-    } catch(e) { }
+    } catch(e) { /* try next */ }
   }
-  throw new Error('All fetch attempts failed.');
+  throw new Error('All fetch attempts failed. Check the sheet is published to web (File → Share → Publish to web).');
 }
 
 async function fetchData() {
@@ -429,16 +450,16 @@ async function fetchData() {
     const text = await tryFetch(CSV_URL);
     const rows = parseCSV(text);
     CREATORS = processRows(rows);
-    if (CREATORS.length === 0) throw new Error('No creator rows found.');
-    // FIX: Using Date.now() instead of a Date object to prevent type coercion during subtraction
-    lastFetch = Date.now();
+    if (CREATORS.length === 0) throw new Error('Sheet parsed but no creator rows found — check column headers match expected format.');
+    lastFetch = new Date();
     hideError();
     renderAll();
     setRefreshStatus(null);
   } catch (e) {
+    console.error('Fetch error:', e);
     showError(e.message);
     setRefreshStatus('⚠ fetch failed — click to retry');
-    if (CREATORS.length > 0) renderAll();
+    if (CREATORS.length > 0) renderAll(); // keep showing cached data
   } finally {
     document.getElementById('loading-overlay').style.display = 'none';
   }
@@ -447,6 +468,7 @@ async function fetchData() {
 function setRefreshStatus(msg) {
   const el = document.getElementById('refresh-status');
   if (msg) { el.textContent = msg; return; }
+  // Format "X min ago"
   if (!lastFetch) { el.textContent = '⟳'; return; }
   const diff = Math.floor((Date.now() - lastFetch) / 60000);
   el.textContent = diff < 1 ? '⟳ just now' : `⟳ ${diff}m ago`;
@@ -458,6 +480,7 @@ function showError(msg) {
   el.style.display = 'block';
 }
 function hideError() { document.getElementById('error-banner').style.display = 'none'; }
+
 document.getElementById('refresh-status').onclick = fetchData;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -465,31 +488,37 @@ document.getElementById('refresh-status').onclick = fetchData;
 // ═══════════════════════════════════════════════════════════════════
 function agg() {
   const tot = (k) => CREATORS.reduce((s,c) => s + (c[k]||0), 0);
-  const orgViews = tot('orgViews'), orgClicks = tot('orgClicks'), orgInstalls = tot('orgInstalls'), orgTrials = tot('orgTrials'),
-    paImpr = tot('paImpr'), paClicks = tot('paClicks'), paInstalls = tot('paInstalls'), paTrials = tot('paTrials'), 
-    contentCost = tot('contentCost'), paSpend = tot('paSpend');
-  
+  const orgViews = tot('orgViews'), orgClicks = tot('orgClicks'),
+    orgInstalls = tot('orgInstalls'), orgTrials = tot('orgTrials'),
+    paImpr = tot('paImpr'), paClicks = tot('paClicks'), paInstalls = tot('paInstalls'),
+    paTrials = tot('paTrials'), contentCost = tot('contentCost'), paSpend = tot('paSpend');
   const totalTrials = orgTrials + paTrials;
   const totalSpend = contentCost + paSpend;
+  const cpClickOrg = orgClicks > 0 ? Math.round(contentCost / orgClicks) : 0;
+  const cpInstallOrg = orgInstalls > 0 ? Math.round(contentCost / orgInstalls) : 0;
+  const cpTrialOrg = orgTrials > 0 ? Math.round(contentCost / orgTrials) : 0;
+  const cpClickPA = paClicks > 0 ? Math.round(paSpend / paClicks) : 0;
+  const cpInstallPA = paInstalls > 0 ? Math.round(paSpend / paInstalls) : 0;
+  const cpTrialPA = paTrials > 0 ? Math.round(paSpend / paTrials) : 0;
+  const cpTrialBlend = totalTrials > 0 ? Math.round(totalSpend / totalTrials) : 0;
   const totalClicks = orgClicks + paClicks;
   const totalInstalls = orgInstalls + paInstalls;
+  const cpClickBlend = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+  const cpInstallBlend = totalInstalls > 0 ? Math.round(totalSpend / totalInstalls) : 0;
+  const cpmOrg = orgViews > 0 ? Math.round(contentCost / orgViews * 1000) : 0;
+  const cpmPA = paImpr > 0 ? Math.round(paSpend / paImpr * 1000) : 0;
   const totalReach = orgViews + paImpr;
+  const cpmBlend = totalReach > 0 ? Math.round(totalSpend / totalReach * 1000) : 0;
 
   return {
-    orgViews, orgClicks, orgInstalls, orgTrials, paImpr, paClicks, paInstalls, paTrials,
-    contentCost, paSpend, totalTrials, totalSpend, totalClicks, totalInstalls, totalReach,
-    cpClickOrg: orgClicks > 0 ? Math.round(contentCost / orgClicks) : 0,
-    cpInstallOrg: orgInstalls > 0 ? Math.round(contentCost / orgInstalls) : 0,
-    cpTrialOrg: orgTrials > 0 ? Math.round(contentCost / orgTrials) : 0,
-    cpClickPA: paClicks > 0 ? Math.round(paSpend / paClicks) : 0,
-    cpInstallPA: paInstalls > 0 ? Math.round(paSpend / paInstalls) : 0,
-    cpTrialPA: paTrials > 0 ? Math.round(paSpend / paTrials) : 0,
-    cpClickBlend: totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0,
-    cpInstallBlend: totalInstalls > 0 ? Math.round(totalSpend / totalInstalls) : 0,
-    cpTrialBlend: totalTrials > 0 ? Math.round(totalSpend / totalTrials) : 0,
-    cpmOrg: orgViews > 0 ? Math.round(contentCost / orgViews * 1000) : 0,
-    cpmPA: paImpr > 0 ? Math.round(paSpend / paImpr * 1000) : 0,
-    cpmBlend: totalReach > 0 ? Math.round(totalSpend / totalReach * 1000) : 0,
+    orgViews, orgClicks, orgInstalls, orgTrials,
+    paImpr, paClicks, paInstalls, paTrials,
+    contentCost, paSpend, totalTrials, totalSpend,
+    cpClickOrg, cpInstallOrg, cpTrialOrg,
+    cpClickPA, cpInstallPA, cpTrialPA,
+    cpClickBlend, cpInstallBlend, cpTrialBlend,
+    cpmOrg, cpmPA, cpmBlend,
+    totalClicks, totalInstalls, totalReach,
   };
 }
 
@@ -499,32 +528,24 @@ function agg() {
 function renderAll() {
   const a = agg();
   document.getElementById('creator-count').textContent = CREATORS.length;
-  
-  // FIX: Only render charts if their respective tabs are actively visible to prevent Canvas collapse
-  const execPage = document.getElementById('page-exec');
-  if (execPage.classList.contains('active')) {
-    renderExecMetrics(a);
-    renderTop15(a);
-    renderSpendChart(a);
-    renderTrialShare(a);
-  }
-  
-  const funnelPage = document.getElementById('page-funnel');
-  if (funnelPage.classList.contains('active')) {
+  renderExecMetrics(a);
+  renderTop15(a);
+  renderSpendChart(a);
+  renderTrialShare(a);
+  const activeFunnel = document.querySelector('#funnel-toggle .ftab.active');
+  if (activeFunnel) {
+    const m = activeFunnel.textContent.trim().toLowerCase().replace(' pa','').replace('meta','meta');
     initFunnelCharts(funnelMode, a);
   }
-  
   const lbPage = document.getElementById('page-leaderboard');
-  if (lbPage.classList.contains('active')) {
-    renderLeaderboard();
-  }
+  if (lbPage.classList.contains('active')) renderLeaderboard();
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // EXEC METRICS CARDS
 // ═══════════════════════════════════════════════════════════════════
-function inr(v) { return (!v||v===0) ? '—' : '₹'+Math.round(v).toLocaleString('en-IN'); }
-function fmt(v) { return (!v||v===0) ? '—' : Math.round(v).toLocaleString('en-IN'); }
+function inr(v) { if(!v||v===0) return '—'; return '₹'+Math.round(v).toLocaleString('en-IN'); }
+function fmt(v) { if(!v||v===0) return '—'; return Math.round(v).toLocaleString('en-IN'); }
 
 function renderExecMetrics(a) {
   document.getElementById('exec-metrics').innerHTML = `
@@ -572,7 +593,8 @@ function renderTop15(a) {
     const orgW = Math.round((c.orgTrials/max)*100);
     const paW = Math.round((c.paTrials/max)*100);
     return `<div class="hbar-item">
-      <div class="hbar-label">@${esc(c.name)}</div> <div class="hbar-track">
+      <div class="hbar-label">@${c.name}</div>
+      <div class="hbar-track">
         <div class="hbar-org" style="width:${orgW}%"></div>
         <div class="hbar-pa" style="width:${paW}%"></div>
       </div>
@@ -587,6 +609,7 @@ function renderTop15(a) {
 function renderSpendChart(a) {
   if (spendChart) spendChart.destroy();
   const ctx = document.getElementById('spendChart').getContext('2d');
+  const median = a.cpTrialBlend;
   spendChart = new Chart(ctx, {
     type:'bar',
     data:{
@@ -604,7 +627,10 @@ function renderSpendChart(a) {
         tooltip:{callbacks:{label:c=>'₹'+c.raw.toLocaleString('en-IN')}}
       },
       scales:{
-        y:{ ticks:{color:'#64748b',callback:v=>'₹'+v.toLocaleString()}, grid:{color:'rgba(255,255,255,.05)'} },
+        y:{
+          ticks:{color:'#64748b',callback:v=>'₹'+v.toLocaleString()},
+          grid:{color:'rgba(255,255,255,.05)'}
+        },
         x:{ticks:{color:'#94a3b8'},grid:{display:false}}
       }
     }
@@ -622,15 +648,14 @@ function renderTrialShare(a) {
       datasets:[{
         data:[a.orgTrials, a.paTrials],
         backgroundColor:['#1d9e75','#378add'],
-        borderWidth:0, cutout:'60%' // FIX: Replaced invalid 'holeRadius'
+        borderWidth:0, holeRadius:0.6
       }]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom',labels:{color:'#94a3b8',boxWidth:12,font:{size:11}}},
-        // FIX: Prevent Divide by Zero NaN% on brand new sheets
-        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${a.totalTrials ? Math.round(c.raw/a.totalTrials*100) : 0}%)`}}
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} (${Math.round(c.raw/a.totalTrials*100)}%)`}}
       }
     }
   });
@@ -648,12 +673,12 @@ function switchFunnel(mode, el) {
 
 function initFunnelCharts(mode, a) {
   let steps;
+  // Spend summary bar
   const spendBarData = mode === 'organic'
     ? [{label:'Content Spend', val:a.contentCost}]
     : mode === 'meta'
     ? [{label:'Ad Spend', val:a.paSpend}]
     : [{label:'Content Spend', val:a.contentCost}, {label:'Ad Spend', val:a.paSpend}, {label:'Total Spend', val:a.totalSpend}];
-  
   document.getElementById('funnel-spend-bar').innerHTML = spendBarData.map((d,i) =>
     `${i>0?'<div class="fsb-sep"></div>':''}<div class="fsb-item"><span class="fsb-label">${d.label}</span><span class="fsb-val">₹${Math.round(d.val).toLocaleString('en-IN')}</span></div>`
   ).join('');
@@ -702,8 +727,7 @@ function initFunnelCharts(mode, a) {
   fVolChart = new Chart(document.getElementById('fVolChart').getContext('2d'), {
     type:'bar', data:{labels,datasets:[{data:vals,backgroundColor:'#1d9e75',borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      // FIX: Changed from 'logarithmic' to 'linear' to prevent Chart.js crash on 0 values
-      scales:{y:{type:'linear',ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
+      scales:{y:{type:'logarithmic',ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#94a3b8'},grid:{display:false}}}}
   });
 
   fCPXChart = new Chart(document.getElementById('fCPXChart').getContext('2d'), {
@@ -716,22 +740,18 @@ function initFunnelCharts(mode, a) {
 // ═══════════════════════════════════════════════════════════════════
 // LEADERBOARD
 // ═══════════════════════════════════════════════════════════════════
-function setSortLB(col, defaultAsc, el) {
-  // FIX: Allow toggling asc/desc on the same column
-  const isAsc = (lbSort.col === col) ? !lbSort.asc : defaultAsc;
-  lbSort = { col, asc: isAsc };
+function setSortLB(col, asc, el) {
+  lbSort = { col, asc };
   document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   updateHeaderArrows(col);
   renderLeaderboard();
 }
-
-function setSortLBH(col, defaultAsc, el) {
-  // FIX: Allow toggling asc/desc by clicking the table header repeatedly
-  const isAsc = (lbSort.col === col) ? !lbSort.asc : defaultAsc;
-  lbSort = { col, asc: isAsc };
+function setSortLBH(col, asc, el) {
+  lbSort = { col, asc };
   document.querySelectorAll('th.sort-on').forEach(t=>t.classList.remove('sort-on'));
   el.classList.add('sort-on');
+  // Sync quick-toggle sort buttons
   document.querySelectorAll('.sort-btn').forEach(b => {
     const onclick = b.getAttribute('onclick') || '';
     b.classList.toggle('active', onclick.includes(`'${col}'`));
@@ -739,7 +759,6 @@ function setSortLBH(col, defaultAsc, el) {
   updateHeaderArrows(col);
   renderLeaderboard();
 }
-
 function updateHeaderArrows(col) {
   document.querySelectorAll('.sar').forEach(s => {
     const th = s.closest('th');
@@ -779,7 +798,8 @@ function renderLeaderboard() {
   document.getElementById('lb-body').innerHTML = data.map(c => {
     const tc = c.type==='micro'?'t-micro':c.type==='macro'?'t-macro':c.type==='mega'?'t-mega':'t-nano';
     return `<tr>
-      <td><div class="cname">@${esc(c.name)}</div><div class="cid">ID ${c.id}</div></td> <td><span class="type-b ${tc}">${c.type.toUpperCase()}</span></td>
+      <td><div class="cname">@${c.name}</div><div class="cid">ID ${c.id}</div></td>
+      <td><span class="type-b ${tc}">${c.type.toUpperCase()}</span></td>
       <td>${roiBadge(c.roiGrade||'D')}</td>
       <td class="col-organic">${c.orgViews?c.orgViews.toLocaleString('en-IN'):'—'}</td>
       <td class="col-organic">${c.orgClicks?c.orgClicks.toLocaleString('en-IN'):'—'}</td>
@@ -820,19 +840,8 @@ function showPage(id, el) {
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
-  
-  // FIX: Force render elements specific to the activated tab
-  const a = agg();
-  if (id === 'exec') {
-    renderExecMetrics(a);
-    renderTop15(a);
-    renderSpendChart(a);
-    renderTrialShare(a);
-  } else if (id === 'funnel') {
-    initFunnelCharts(funnelMode, a);
-  } else if (id === 'leaderboard') {
-    renderLeaderboard();
-  }
+  if (id === 'funnel') initFunnelCharts(funnelMode, agg());
+  if (id === 'leaderboard') renderLeaderboard();
 }
 
 // ═══════════════════════════════════════════════════════════════════
